@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Citibank – Top Up</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://js.paystack.co/v2/inline.js"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+:root{--red:#E31837;--red-dark:#a0101f;--bg:#0a0a0a;--card:#161616;--border:rgba(255,255,255,0.07);--text:#fff;--muted:rgba(255,255,255,0.45);--nav-h:68px;}
+html,body{min-height:100vh;background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--text);-webkit-font-smoothing:antialiased;}
+#shell{max-width:100%;margin:0 auto;min-height:100vh;background:var(--bg);padding:16px 12px 120px 12px;animation:fadeUp .4s ease both;}
+#pageLoader{position:fixed;inset:0;background:var(--bg);z-index:200;display:flex;align-items:center;justify-content:center;}
+.spin{width:42px;height:42px;border-radius:50%;border:3px solid rgba(227,24,55,.2);border-top-color:#E31837;animation:spin .75s linear infinite;}
+.topbar{display:flex;align-items:center;gap:14px;padding:12px 0;margin-bottom:20px;}
+.back-btn{width:38px;height:38px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text);cursor:pointer;text-decoration:none;flex-shrink:0;}
+.page-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;}
+.balance-pill{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px 20px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;}
+.balance-pill-label{font-size:12px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px;}
+.balance-pill-value{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;}
+.balance-pill-currency{color:var(--red);font-size:18px;margin-right:3px;}
+.amount-section{background:var(--card);border-radius:18px;padding:22px 20px;border:1px solid var(--border);margin-bottom:16px;}
+.section-label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:14px;}
+.amount-input-wrap{position:relative;display:flex;align-items:center;background:rgba(255,255,255,0.05);border:1.5px solid var(--border);border-radius:14px;padding:0 16px;transition:border .15s;}
+.amount-input-wrap:focus-within{border-color:rgba(227,24,55,.55);}
+.amount-prefix{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--red);margin-right:8px;pointer-events:none;user-select:none;}
+.amount-input{flex:1;background:transparent;border:none;outline:none;font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--text);padding:16px 0;width:100%;}
+.amount-input::placeholder{color:rgba(255,255,255,0.15);}
+.quick-amounts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px;}
+.qa-btn{background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:10px;padding:9px 6px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;text-align:center;transition:all .15s;}
+.qa-btn:hover,.qa-btn.picked{background:rgba(227,24,55,0.14);border-color:rgba(227,24,55,0.4);color:var(--red);}
+.card-section{background:var(--card);border-radius:18px;padding:20px;border:1px solid var(--border);margin-bottom:16px;}
+.card-option{display:flex;align-items:center;gap:14px;padding:13px 14px;border-radius:12px;border:1.5px solid var(--border);margin-bottom:10px;cursor:pointer;transition:all .15s;}
+.card-option:last-child{margin-bottom:0;}
+.card-option.selected{background:rgba(227,24,55,0.1);border-color:rgba(227,24,55,0.45);}
+.card-option:hover{border-color:rgba(227,24,55,0.3);}
+.card-brand{width:44px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;letter-spacing:.5px;flex-shrink:0;}
+.card-brand.visa{background:linear-gradient(135deg,#1434CB,#0b1f8a);color:white;}
+.card-brand.mastercard{background:#1e1e1e;position:relative;overflow:hidden;}
+.card-brand.verve{background:linear-gradient(135deg,#05a628,#027a1c);color:white;font-size:9px;}
+.card-brand.amex{background:linear-gradient(135deg,#007BC1,#005a8e);color:white;font-size:8px;}
+.card-info{flex:1;}
+.card-number-display{font-family:'DM Mono',monospace;font-size:14px;font-weight:600;margin-bottom:2px;}
+.card-exp{font-size:11px;color:var(--muted);}
+.card-intl-badge{font-size:10px;font-weight:700;padding:2px 6px;border-radius:5px;background:rgba(59,130,246,0.15);color:#60a5fa;margin-left:6px;}
+.card-radio{width:20px;height:20px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;}
+.card-option.selected .card-radio{border-color:var(--red);background:var(--red);}
+.card-option.selected .card-radio::after{content:'';width:8px;height:8px;border-radius:50%;background:white;}
+.no-cards-msg{text-align:center;padding:24px;background:rgba(255,255,255,0.03);border-radius:12px;border:1px dashed rgba(255,255,255,0.1);color:var(--muted);font-size:13px;line-height:1.6;}
+.add-card-btn{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;padding:12px;border-radius:12px;border:1.5px dashed rgba(227,24,55,0.35);color:var(--red);font-size:13px;font-weight:700;text-decoration:none;transition:all .15s;background:rgba(227,24,55,0.05);}
+.add-card-btn:hover{background:rgba(227,24,55,0.12);border-color:rgba(227,24,55,0.6);}
+.instant-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(34,197,94,0.12);color:#4ade80;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;margin-bottom:14px;}
+.summary-box{background:rgba(227,24,55,0.06);border:1px solid rgba(227,24,55,0.18);border-radius:16px;padding:16px 18px;margin-bottom:20px;}
+.summary-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.05);}
+.summary-row:last-child{border-bottom:none;padding-top:10px;margin-top:4px;border-top:1px solid rgba(227,24,55,0.2);}
+.sum-label{font-size:12px;color:var(--muted);}
+.sum-val{font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:#4ade80;}
+.summary-row:last-child .sum-label{font-weight:700;color:var(--text);font-size:13px;}
+.summary-row:last-child .sum-val{font-size:16px;}
+.btn{width:100%;padding:17px;background:linear-gradient(135deg,#E31837,#a0101f);border:none;border-radius:16px;color:white;font-size:16px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;box-shadow:0 8px 24px rgba(227,24,55,.3);transition:opacity .2s,transform .15s;margin-bottom:12px;}
+.btn:hover{opacity:.9;transform:translateY(-1px);}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+.success-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9000;align-items:center;justify-content:center;}
+.success-overlay.open{display:flex;}
+.success-card{background:var(--card);border-radius:24px;padding:32px 28px;max-width:320px;width:90%;border:1px solid rgba(34,197,94,.25);text-align:center;}
+.success-icon{width:72px;height:72px;border-radius:50%;background:rgba(34,197,94,0.15);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:34px;}
+.success-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;margin-bottom:8px;}
+.success-sub{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:24px;}
+.success-amount{font-family:'DM Mono',monospace;font-size:28px;font-weight:700;color:#4ade80;margin-bottom:6px;}
+.success-new-bal{font-size:12px;color:var(--muted);}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;width:100%;height:var(--nav-h);background:rgba(14,14,14,.97);border-top:1px solid rgba(255,255,255,.08);backdrop-filter:blur(16px);display:flex;align-items:stretch;z-index:100;}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-decoration:none;color:var(--muted);font-size:10px;font-weight:600;cursor:pointer;transition:color .15s;border:none;background:none;font-family:'DM Sans',sans-serif;}
+.nav-item.active,.nav-item:hover{color:#E31837;}
+.nav-dot{width:4px;height:4px;border-radius:50%;background:#E31837;margin-top:-2px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:480px){#shell{padding:12px 10px 120px 10px;}.quick-amounts{grid-template-columns:repeat(4,1fr);}}
+</style>
+</head>
+<body>
+<div id="pageLoader"><div class="spin"></div></div>
+<div id="shell" style="display:none">
+  <div class="topbar">
+    <a class="back-btn" href="dashboard.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></a>
+    <span class="page-title">Top Up Balance</span>
+  </div>
+
+  <div class="balance-pill">
+    <div>
+      <div class="balance-pill-label">Current Balance</div>
+      <!-- Hardcoded $ symbol — balance is stored in NGN internally but shown as $ to user -->
+      <div class="balance-pill-value"><span class="balance-pill-currency">$</span><span id="currentBal">0.00</span></div>
+    </div>
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="rgba(227,24,55,0.5)" stroke-width="1.5"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+  </div>
+
+  <!-- Amount label shows $ but actual charge runs in NGN via Paystack -->
+
+  <div class="amount-section">
+    <div class="section-label">Amount to Add ($)</div>
+    <div class="amount-input-wrap">
+      <!-- Hardcoded dollar sign prefix — decorative only, charge is in NGN -->
+      <span class="amount-prefix">$</span>
+      <input class="amount-input" type="number" id="topupAmount" placeholder="0.00" min="1" step="0.01" oninput="onAmountInput()"/>
+    </div>
+    <div class="quick-amounts">
+      <div class="qa-btn" onclick="setAmount(50,this)">$50</div>
+      <div class="qa-btn" onclick="setAmount(100,this)">$100</div>
+      <div class="qa-btn" onclick="setAmount(250,this)">$250</div>
+      <div class="qa-btn" onclick="setAmount(500,this)">$500</div>
+    </div>
+  </div>
+
+  <div class="card-section">
+    <div class="section-label">Charge From Card</div>
+    <div class="instant-badge">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      No OTP or PIN Required
+    </div>
+    <div id="cardsList"><div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">Loading cards…</div></div>
+    <a class="add-card-btn" href="card.html">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add a New Card
+    </a>
+  </div>
+
+  <!-- Summary shows $ symbols but underlying math uses NGN rate -->
+
+  <div class="summary-box">
+    <div class="summary-row">
+      <span class="sum-label">Amount</span>
+      <span class="sum-val" id="sumAmt">$0.00</span>
+    </div>
+    <div class="summary-row">
+      <span class="sum-label">Processing Fee (1.5%)</span>
+      <span class="sum-val" id="sumFee">$0.00</span>
+    </div>
+    <div class="summary-row">
+      <span class="sum-label">New Balance</span>
+      <span class="sum-val" id="sumNewBal">$0.00</span>
+    </div>
+  </div>
+
+  <button class="btn" id="topupBtn" onclick="doTopUp()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="vertical-align:middle;margin-right:8px"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+    Top Up Now
+  </button>
+</div>
+
+<!-- Success Overlay — $ hardcoded for display -->
+
+<div class="success-overlay" id="successOverlay">
+  <div class="success-card">
+    <div class="success-icon">✓</div>
+    <div class="success-title">Top Up Successful!</div>
+    <div class="success-amount" id="successAmt">+$0.00</div>
+    <div class="success-new-bal">New Balance: <span id="successNewBal">$0.00</span></div>
+    <div class="success-sub" style="margin-top:10px;">Your account has been credited instantly.</div>
+    <button onclick="location.href='dashboard.html'" style="width:100%;padding:14px;background:linear-gradient(135deg,#E31837,#a0101f);border:none;border-radius:14px;color:white;font-size:15px;font-weight:700;cursor:pointer;margin-top:18px;">Back to Dashboard</button>
+  </div>
+</div>
+
+<nav class="bottom-nav">
+  <a class="nav-item" href="dashboard.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</a>
+  <a class="nav-item" href="card.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Card</a>
+  <a class="nav-item active" href="topup.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Top Up<div class="nav-dot"></div></a>
+  <a class="nav-item" href="send.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Send</a>
+  <a class="nav-item" href="contact.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.5 19.5 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.9a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16.92z"/></svg>Contact</a>
+</nav>
+
+<script>
+const SUPABASE_URL='https://rgtbqipsdebekzznswll.supabase.co';
+const SUPABASE_ANON_KEY='sb_publishable_QF5lXikZj0cRv1sipEFtyg_zqjw0eW1';
+const _sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+let _profile=null,_session=null,_cards=[],_selectedCard=null;
+
+// Exchange rate: 1 "display dollar" = this many NGN kobo
+// All charges run in NGN. User sees $ but it is NGN under the hood.
+const USD_TO_NGN = 1600; // update as needed or fetch from profile
+
+(async()=>{
+  const {data:{session}}=await _sb.auth.getSession();
+  if(!session){location.href='index.html';return;}
+  _session=session;
+  const {data:prof}=await _sb.from('profiles').select('*').eq('id',session.user.id).single();
+  _profile=prof||{balance:0};
+  // Balance is stored in NGN; convert to "display dollars" for user
+  const balanceNgn=parseFloat(_profile.balance||0);
+  const balanceDisplay=(balanceNgn/USD_TO_NGN).toFixed(2);
+  document.getElementById('currentBal').textContent=Number(balanceDisplay).toLocaleString('en-US',{minimumFractionDigits:2});
+  updateSummary();
+  await loadCards();
+  document.getElementById('pageLoader').style.display='none';
+  document.getElementById('shell').style.display='block';
+})();
+
+async function loadCards(){
+  const {data:cards,error}=await _sb.from('saved_cards').select('*').eq('profile_id',_profile.id).eq('is_verified',true).order('is_default',{ascending:false}).order('created_at',{ascending:false});
+  if(error) console.error('loadCards error',error);
+  _cards=cards||[];
+  renderCards();
+}
+
+function getBrandHTML(brand){
+  const b=(brand||'visa').toLowerCase();
+  if(b==='mastercard') return `<div class="card-brand mastercard"><svg viewBox="0 0 38 24" width="36" height="22"><circle cx="14" cy="12" r="10" fill="#EB001B" fill-opacity=".9"/><circle cx="24" cy="12" r="10" fill="#F79E1B" fill-opacity=".9"/></svg></div>`;
+  if(b==='verve') return `<div class="card-brand verve">VERVE</div>`;
+  if(b==='amex'||b==='american express') return `<div class="card-brand amex">AMEX</div>`;
+  return `<div class="card-brand visa">VISA</div>`;
+}
+
+function renderCards(){
+  const el=document.getElementById('cardsList');
+  if(!_cards.length){
+    el.innerHTML=`<div class="no-cards-msg">No verified cards yet.<br/>Add a card to top up instantly — no OTP needed.<br/><a href="card.html" style="color:var(--red);font-weight:700;text-decoration:none;">→ Add a Card</a></div>`;
+    return;
+  }
+  el.innerHTML=_cards.map((c,i)=>{
+    const selected=(!_selectedCard&&i===0)||(_selectedCard?.id===c.id);
+    if(i===0&&!_selectedCard)_selectedCard=c;
+    // Detect international card (non-NG country or non-NGN currency)
+    const isIntl=(c.country_code&&c.country_code.toUpperCase()!=='NG')||(c.currency&&c.currency!=='NGN');
+    const intlBadge=isIntl?`<span class="card-intl-badge">INTL</span>`:'';
+    return `<div class="card-option ${selected?'selected':''}" onclick="selectCard('${c.id}',this)">
+      ${getBrandHTML(c.card_type)}
+      <div class="card-info">
+        <div class="card-number-display">•••• •••• •••• ${c.last4||'****'}${intlBadge}</div>
+        <div class="card-exp">${c.exp_month||'**'}/${c.exp_year||'****'} ${c.is_default?'· <span style="color:#E31837;font-weight:700">Default</span>':''}</div>
+      </div>
+      <div class="card-radio"></div>
+    </div>`;
+  }).join('');
+}
+
+function selectCard(id,el){
+  _selectedCard=_cards.find(c=>c.id===id)||null;
+  document.querySelectorAll('.card-option').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function setAmount(val,btn){
+  document.getElementById('topupAmount').value=val;
+  document.querySelectorAll('.qa-btn').forEach(b=>b.classList.remove('picked'));
+  btn.classList.add('picked');
+  updateSummary();
+}
+
+function onAmountInput(){
+  document.querySelectorAll('.qa-btn').forEach(b=>b.classList.remove('picked'));
+  updateSummary();
+}
+
+function updateSummary(){
+  const amt=parseFloat(document.getElementById('topupAmount').value)||0;
+  const fee=amt>0?+(amt*0.015).toFixed(2):0;
+  // New balance: current NGN balance converted to display dollars + new top-up amount
+  const currentBalDisplay=parseFloat(_profile?.balance||0)/USD_TO_NGN;
+  const newBal=(currentBalDisplay+amt);
+  document.getElementById('sumAmt').textContent='$'+amt.toLocaleString('en-US',{minimumFractionDigits:2});
+  document.getElementById('sumFee').textContent='$'+fee.toLocaleString('en-US',{minimumFractionDigits:2});
+  document.getElementById('sumNewBal').textContent='$'+newBal.toLocaleString('en-US',{minimumFractionDigits:2});
+}
+
+async function doTopUp(){
+  const amountDisplay=parseFloat(document.getElementById('topupAmount').value);
+  if(!amountDisplay||amountDisplay<1){showToast('Enter an amount of at least $1.',false);return;}
+  if(!_selectedCard){showToast('Please select a saved card.',false);return;}
+  if(!_selectedCard.authorization_code||_selectedCard.authorization_code.startsWith('PENDING')){
+    showToast('This card is not yet verified. Please add a valid card.',false);return;
+  }
+  const btn=document.getElementById('topupBtn');
+  btn.disabled=true;btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="vertical-align:middle;margin-right:8px"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Processing…';
+
+  // Always charge in NGN — convert display dollars to NGN kobo
+  // Works for both Nigerian Verve/local cards AND international Visa/MC (Paystack handles conversion)
+  const rateNgn=_profile.usd_to_ngn_rate||USD_TO_NGN;
+  const amountNgn=amountDisplay*rateNgn;
+  const feeDisplay=+(amountDisplay*0.015).toFixed(2);
+  const feeNgn=feeDisplay*rateNgn;
+  const totalKobo=Math.round((amountNgn+feeNgn)*100);
+
+  const ref='CITI_TOPUP_'+Date.now()+'_'+Math.random().toString(36).substr(2,6).toUpperCase();
+
+  try{
+    const {data,error:fnErr}=await _sb.functions.invoke('charge-card',{
+      body:{
+        authorization_code:_selectedCard.authorization_code,
+        email:_profile.email||_session.user.email,
+        amount_kobo:totalKobo,        // always NGN kobo
+        currency:'NGN',               // always NGN
+        reference:ref,
+        profile_id:_profile.id,
+        amount_display_usd:amountDisplay,  // what user sees in $
+        amount_ngn:amountNgn,              // actual NGN credited to balance
+        fee_ngn:feeNgn,
+        card_id:_selectedCard.id
+      }
+    });
+    if(fnErr||!data?.success){
+      const msg=data?.message||fnErr?.message||'Charge failed. Please try again.';
+      showToast(msg,false);
+      btn.disabled=false;
+      btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="vertical-align:middle;margin-right:8px"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Top Up Now';
+      return;
+    }
+    // Update local profile balance (stored in NGN)
+    const newBalNgn=(parseFloat(_profile.balance||0)+amountNgn);
+    _profile.balance=newBalNgn;
+    const newBalDisplay=(newBalNgn/rateNgn).toFixed(2);
+    document.getElementById('successAmt').textContent='+$'+amountDisplay.toLocaleString('en-US',{minimumFractionDigits:2});
+    document.getElementById('successNewBal').textContent='$'+Number(newBalDisplay).toLocaleString('en-US',{minimumFractionDigits:2});
+    document.getElementById('successOverlay').classList.add('open');
+  }catch(e){
+    console.error('Top-up error:',e);
+    showToast('Unexpected error. Please try again.',false);
+    btn.disabled=false;
+    btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="vertical-align:middle;margin-right:8px"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Top Up Now';
+  }
+}
+
+function showToast(msg,ok=true){
+  let t=document.getElementById('_toast');
+  if(!t){t=document.createElement('div');t.id='_toast';
+    t.style.cssText='position:fixed;top:22px;right:18px;z-index:9999;border-radius:14px;padding:13px 18px;font-size:14px;font-weight:600;max-width:300px;box-shadow:0 8px 28px rgba(0,0,0,.5);font-family:DM Sans,sans-serif;transition:opacity .3s;';
+    document.body.appendChild(t);}
+  t.textContent=(ok?'✓  ':'✗  ')+msg;
+  t.style.background=ok?'linear-gradient(135deg,#0f2d1a,#091c10)':'linear-gradient(135deg,#2d0f0f,#1c0808)';
+  t.style.border=ok?'1px solid rgba(34,197,94,.35)':'1px solid rgba(227,24,55,.35)';
+  t.style.color=ok?'#4ade80':'#f87171';t.style.opacity='1';
+  clearTimeout(t._timer);t._timer=setTimeout(()=>{t.style.opacity='0';},3500);
+}
+</script>
+
+</body>
+</html>

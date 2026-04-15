@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Citibank – Settings</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+:root{--red:#E31837;--red-dark:#a0101f;--bg:#0a0a0a;--card:#161616;--border:rgba(255,255,255,0.07);--text:#fff;--muted:rgba(255,255,255,0.45);--nav-h:68px;}
+html,body{min-height:100vh;background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--text);-webkit-font-smoothing:antialiased;}
+#shell{max-width:100%;margin:0 auto;min-height:100vh;background:var(--bg);padding:16px 12px 120px 12px;animation:fadeUp .4s ease both;}
+#pageLoader{position:fixed;inset:0;background:var(--bg);z-index:200;display:flex;align-items:center;justify-content:center;}
+.spin{width:42px;height:42px;border-radius:50%;border:3px solid rgba(227,24,55,.2);border-top-color:#E31837;animation:spin .75s linear infinite;}
+.topbar{display:flex;align-items:center;gap:14px;padding:12px 0;margin-bottom:16px;}
+.back-btn{width:38px;height:38px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text);cursor:pointer;text-decoration:none;flex-shrink:0;}
+.page-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;}
+.section{margin-bottom:24px;}
+.section-title{font-size:13px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;padding:0 4px;}
+.setting-item{background:var(--card);border-radius:14px;padding:16px;border:1px solid var(--border);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;}
+.setting-item.clickable{cursor:pointer;transition:background .15s;}
+.setting-item.clickable:hover{background:rgba(227,24,55,0.08);}
+.setting-label{flex:1;}
+.setting-title{font-size:15px;font-weight:600;margin-bottom:2px;}
+.setting-sub{font-size:12px;color:var(--muted);}
+.toggle-switch{position:relative;width:48px;height:28px;background:rgba(255,255,255,0.1);border-radius:14px;border:1px solid var(--border);cursor:pointer;transition:background .2s;flex-shrink:0;}
+.toggle-switch.on{background:rgba(227,24,55,0.35);border-color:rgba(227,24,55,0.5);}
+.toggle-switch::after{content:'';position:absolute;width:22px;height:22px;background:white;border-radius:11px;top:2px;left:2px;transition:left .25s;box-shadow:0 1px 4px rgba(0,0,0,.3);}
+.toggle-switch.on::after{left:22px;}
+.icon-right{color:var(--muted);font-size:16px;}
+.btn{width:100%;padding:14px;background:linear-gradient(135deg,#E31837,#a0101f);border:none;border-radius:14px;color:white;font-size:15px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;box-shadow:0 8px 24px rgba(227,24,55,.3);margin-top:8px;transition:opacity .2s;}
+.btn:hover{opacity:.9;}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.btn-secondary{background:rgba(255,255,255,0.06);color:var(--text);box-shadow:none;border:1px solid var(--border);}
+.btn-danger{background:linear-gradient(135deg,#f87171,#dc2626);}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9000;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--card);border-radius:20px;padding:28px 24px;max-width:340px;width:90%;border:1px solid var(--border);animation:slideUp .3s ease;max-height:85vh;overflow-y:auto;}
+.modal-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;margin-bottom:6px;}
+.modal-sub{font-size:12px;color:var(--muted);margin-bottom:18px;}
+.form-field{margin-bottom:16px;}
+.form-field label{display:block;margin-bottom:6px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.38);}
+.form-field input{width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:12px;padding:12px 14px;color:white;font-size:15px;font-family:'DM Sans',sans-serif;outline:none;transition:border .15s;}
+.form-field input:focus{border-color:rgba(227,24,55,.6);}
+.currency-option{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,0.04);margin-bottom:10px;cursor:pointer;transition:all .15s;}
+.currency-option.selected{background:rgba(227,24,55,0.15);border-color:rgba(227,24,55,0.4);}
+.currency-option input[type=radio]{accent-color:var(--red);}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;width:100%;height:var(--nav-h);background:rgba(14,14,14,.97);border-top:1px solid rgba(255,255,255,.08);backdrop-filter:blur(16px);display:flex;align-items:stretch;z-index:100;}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-decoration:none;color:var(--muted);font-size:10px;font-weight:600;cursor:pointer;transition:color .15s;border:none;background:none;font-family:'DM Sans',sans-serif;}
+.nav-item.active,.nav-item:hover{color:#E31837;}
+.nav-dot{width:4px;height:4px;border-radius:50%;background:#E31837;margin-top:-2px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div id="pageLoader"><div class="spin"></div></div>
+<div id="shell" style="display:none">
+  <div class="topbar">
+    <a class="back-btn" href="dashboard.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></a>
+    <span class="page-title">Settings</span>
+  </div>
+
+  <!-- Security -->
+  <div class="section">
+    <div class="section-title">🔐 Security</div>
+    <div class="setting-item clickable" onclick="openPINModal()">
+      <div class="setting-label">
+        <div class="setting-title">Transfer PIN</div>
+        <div class="setting-sub" id="pinStatus">Set or change your transaction PIN</div>
+      </div>
+      <div class="icon-right">→</div>
+    </div>
+    <div class="setting-item clickable" onclick="openPasswordModal()">
+      <div class="setting-label">
+        <div class="setting-title">Change Password</div>
+        <div class="setting-sub">Update your account password</div>
+      </div>
+      <div class="icon-right">→</div>
+    </div>
+    <div class="setting-item clickable" onclick="openBiometricModal()">
+      <div class="setting-label">
+        <div class="setting-title">Biometric Login</div>
+        <div class="setting-sub">Enable fingerprint or face recognition</div>
+      </div>
+      <div class="icon-right">→</div>
+    </div>
+  </div>
+
+  <!-- Preferences -->
+  <div class="section">
+    <div class="section-title">⚙️ Preferences</div>
+    <div class="setting-item">
+      <div class="setting-label">
+        <div class="setting-title">Dark Theme</div>
+        <div class="setting-sub">Light theme coming soon</div>
+      </div>
+      <div class="toggle-switch on"></div>
+    </div>
+    <div class="setting-item">
+      <div class="setting-label">
+        <div class="setting-title">Push Notifications</div>
+        <div class="setting-sub" id="notifStatus">Loading…</div>
+      </div>
+      <div class="toggle-switch" id="notifToggle" onclick="toggleNotifications()"></div>
+    </div>
+    <div class="setting-item clickable" onclick="openCurrencyModal()">
+      <div class="setting-label">
+        <div class="setting-title">Default Currency</div>
+        <div class="setting-sub" id="currencyDisplay">Loading…</div>
+      </div>
+      <div class="icon-right">→</div>
+    </div>
+  </div>
+
+  <!-- Account -->
+  <div class="section">
+    <div class="section-title">👤 Account</div>
+    <div class="setting-item clickable" onclick="location.href='profile.html'">
+      <div class="setting-label">
+        <div class="setting-title">Profile Information</div>
+        <div class="setting-sub">View and edit your details</div>
+      </div>
+      <div class="icon-right">→</div>
+    </div>
+    <div class="setting-item clickable" onclick="openTransactionLimitModal()">
+      <div class="setting-label">
+        <div class="setting-title">Transaction Limits</div>
+        <div class="setting-sub">Daily transfer and withdrawal limits</div>
+      </div>
+      <div class="icon-right">→</div>
+    </div>
+    <div class="setting-item clickable" onclick="location.href='card.html'">
+      <div class="setting-label">
+        <div class="setting-title">Linked Cards</div>
+        <div class="setting-sub">Manage your saved cards</div>
+      </div>
+      <div class="icon-right">→</div>
+    </div>
+  </div>
+
+  <!-- Support -->
+  <div class="section">
+    <div class="section-title">💬 Support</div>
+    <div class="setting-item clickable" onclick="location.href='contact.html'">
+      <div class="setting-label">
+        <div class="setting-title">Help Center</div>
+        <div class="setting-sub">FAQs and support options</div>
+      </div>
+      <div class="icon-right">→</div>
+    </div>
+    <div class="setting-item clickable" onclick="location.href='livechat.html'">
+      <div class="setting-label">
+        <div class="setting-title">Live Chat</div>
+        <div class="setting-sub">Chat with our support team</div>
+      </div>
+      <div class="icon-right">→</div>
+    </div>
+  </div>
+
+  <!-- Danger Zone -->
+  <div class="section">
+    <div class="section-title">⚠️ Danger Zone</div>
+    <button class="btn btn-danger" onclick="openDeleteAccountModal()">Delete Account</button>
+  </div>
+</div>
+
+<!-- PIN Modal -->
+<div class="modal-overlay" id="pinModal">
+  <div class="modal">
+    <div class="modal-title">Set Transfer PIN</div>
+    <div class="modal-sub">Enter a 4-digit PIN used for all transfers</div>
+    <div class="form-field"><label>New PIN</label><input type="password" id="pinInput" placeholder="••••" maxlength="4" inputmode="numeric" pattern="[0-9]*"/></div>
+    <div class="form-field"><label>Confirm PIN</label><input type="password" id="pinConfirm" placeholder="••••" maxlength="4" inputmode="numeric" pattern="[0-9]*"/></div>
+    <button class="btn" id="savePinBtn" onclick="savePIN()">Save PIN</button>
+    <button class="btn btn-secondary" onclick="closeModal('pinModal')">Cancel</button>
+  </div>
+</div>
+
+<!-- Password Modal -->
+<div class="modal-overlay" id="passwordModal">
+  <div class="modal">
+    <div class="modal-title">Change Password</div>
+    <div class="modal-sub">Your new password must be at least 8 characters</div>
+    <div class="form-field"><label>New Password</label><input type="password" id="newPassword" placeholder="••••••••" minlength="8"/></div>
+    <div class="form-field"><label>Confirm New Password</label><input type="password" id="confirmPassword" placeholder="••••••••"/></div>
+    <button class="btn" id="changePassBtn" onclick="changePassword()">Update Password</button>
+    <button class="btn btn-secondary" onclick="closeModal('passwordModal')">Cancel</button>
+  </div>
+</div>
+
+<!-- Currency Modal -->
+<div class="modal-overlay" id="currencyModal">
+  <div class="modal">
+    <div class="modal-title">Default Currency</div>
+    <div class="modal-sub">Select your preferred display currency</div>
+    <div class="currency-option" id="cur_USD" onclick="selectCurrency('USD')"><input type="radio" name="currency" value="USD"/> <span>🇺🇸 USD – US Dollar</span></div>
+    <div class="currency-option" id="cur_GBP" onclick="selectCurrency('GBP')"><input type="radio" name="currency" value="GBP"/> <span>🇬🇧 GBP – British Pound</span></div>
+    <div class="currency-option" id="cur_EUR" onclick="selectCurrency('EUR')"><input type="radio" name="currency" value="EUR"/> <span>🇪🇺 EUR – Euro</span></div>
+    <div class="currency-option" id="cur_NGN" onclick="selectCurrency('NGN')"><input type="radio" name="currency" value="NGN"/> <span>🇳🇬 NGN – Nigerian Naira</span></div>
+    <div class="currency-option" id="cur_CAD" onclick="selectCurrency('CAD')"><input type="radio" name="currency" value="CAD"/> <span>🇨🇦 CAD – Canadian Dollar</span></div>
+    <button class="btn" id="saveCurrencyBtn" onclick="saveCurrency()">Save Currency</button>
+    <button class="btn btn-secondary" onclick="closeModal('currencyModal')">Cancel</button>
+  </div>
+</div>
+
+<!-- Delete Account Modal -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal">
+    <div class="modal-title">Delete Account?</div>
+    <div class="modal-sub" style="color:#f87171;">This cannot be undone. All your data will be permanently removed.</div>
+    <div class="form-field"><label>Type "DELETE" to confirm</label><input type="text" id="deleteConfirm" placeholder="Type DELETE"/></div>
+    <button class="btn btn-danger" onclick="deleteAccount()">Yes, Delete My Account</button>
+    <button class="btn btn-secondary" onclick="closeModal('deleteModal')">Cancel</button>
+  </div>
+</div>
+
+<nav class="bottom-nav">
+  <a class="nav-item" href="dashboard.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</a>
+  <a class="nav-item" href="card.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Card</a>
+  <a class="nav-item" href="send.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Send</a>
+  <a class="nav-item" href="contact.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.5 19.5 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.9a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16.92z"/></svg>Contact</a>
+  <a class="nav-item active" href="settings.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m2.98 2.98l4.24 4.24M1 12h6m6 0h6M4.22 19.78l4.24-4.24m2.98-2.98l4.24-4.24"/></svg>Settings<div class="nav-dot"></div></a>
+</nav>
+
+<script>
+const SUPABASE_URL='https://rgtbqipsdebekzznswll.supabase.co';
+const SUPABASE_ANON_KEY='sb_publishable_QF5lXikZj0cRv1sipEFtyg_zqjw0eW1';
+const _sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+let _profile=null;
+let _session=null;
+let _selectedCurrency='USD';
+
+const CURRENCY_LABELS={USD:'USD (US Dollar)',GBP:'GBP (British Pound)',EUR:'EUR (Euro)',NGN:'NGN (Nigerian Naira)',CAD:'CAD (Canadian Dollar)'};
+
+(async()=>{
+  const {data:{session}}=await _sb.auth.getSession();
+  if(!session){location.href='index.html';return;}
+  _session=session;
+  const {data:prof}=await _sb.from('profiles').select('*').eq('id',session.user.id).single();
+  _profile=prof||{id:session.user.id};
+
+  // Load notifications preference
+  const notifOn=_profile.notifications_enabled!==false;
+  setNotifUI(notifOn);
+
+  // Load currency preference
+  _selectedCurrency=_profile.preferred_currency||'USD';
+  document.getElementById('currencyDisplay').textContent=CURRENCY_LABELS[_selectedCurrency]||_selectedCurrency;
+  updateCurrencyUI(_selectedCurrency);
+
+  // PIN status
+  document.getElementById('pinStatus').textContent=_profile.transfer_pin?'PIN is set ✓':'No PIN set — tap to create one';
+
+  document.getElementById('pageLoader').style.display='none';
+  document.getElementById('shell').style.display='block';
+})();
+
+// ── Utils ──────────────────────────────────────────────────────────────────
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function openModal(id){document.getElementById(id).classList.add('open');}
+
+function showToast(msg,ok=true){
+  let t=document.getElementById('_toast');
+  if(!t){t=document.createElement('div');t.id='_toast';
+    t.style.cssText='position:fixed;top:22px;right:18px;z-index:9999;border-radius:14px;padding:13px 18px;font-size:14px;font-weight:600;max-width:300px;box-shadow:0 8px 28px rgba(0,0,0,.5);font-family:DM Sans,sans-serif;transition:opacity .3s;';
+    document.body.appendChild(t);}
+  t.textContent=(ok?'✓  ':'✗  ')+msg;
+  t.style.background=ok?'linear-gradient(135deg,#0f2d1a,#091c10)':'linear-gradient(135deg,#2d0f0f,#1c0808)';
+  t.style.border=ok?'1px solid rgba(34,197,94,.35)':'1px solid rgba(227,24,55,.35)';
+  t.style.color=ok?'#4ade80':'#f87171';t.style.opacity='1';
+  clearTimeout(t._timer);t._timer=setTimeout(()=>{t.style.opacity='0';},3200);
+}
+
+async function updateProfile(updates,successMsg){
+  const {error}=await _sb.from('profiles').update(updates).eq('id',_profile.id);
+  if(error){showToast('Error: '+error.message,false);return false;}
+  Object.assign(_profile,updates);
+  showToast(successMsg);
+  return true;
+}
+
+// ── PIN ────────────────────────────────────────────────────────────────────
+function openPINModal(){openModal('pinModal');}
+
+async function savePIN(){
+  const pin=document.getElementById('pinInput').value.trim();
+  const confirm=document.getElementById('pinConfirm').value.trim();
+  if(!pin||pin.length!==4||!/^\d{4}$/.test(pin)){showToast('PIN must be exactly 4 digits.',false);return;}
+  if(pin!==confirm){showToast('PINs do not match.',false);return;}
+  const btn=document.getElementById('savePinBtn');
+  btn.disabled=true;btn.textContent='Saving…';
+  const ok=await updateProfile({transfer_pin:pin},'Transfer PIN updated!');
+  btn.disabled=false;btn.textContent='Save PIN';
+  if(ok){
+    document.getElementById('pinStatus').textContent='PIN is set ✓';
+    document.getElementById('pinInput').value='';
+    document.getElementById('pinConfirm').value='';
+    closeModal('pinModal');
+  }
+}
+
+// ── Password ───────────────────────────────────────────────────────────────
+function openPasswordModal(){openModal('passwordModal');}
+
+async function changePassword(){
+  const newPass=document.getElementById('newPassword').value;
+  const confirm=document.getElementById('confirmPassword').value;
+  if(newPass.length<8){showToast('Password must be at least 8 characters.',false);return;}
+  if(newPass!==confirm){showToast('Passwords do not match.',false);return;}
+  const btn=document.getElementById('changePassBtn');
+  btn.disabled=true;btn.textContent='Updating…';
+  // This updates the password in Supabase Auth directly
+  const {error}=await _sb.auth.updateUser({password:newPass});
+  btn.disabled=false;btn.textContent='Update Password';
+  if(error){showToast('Failed: '+error.message,false);return;}
+  showToast('Password updated successfully!');
+  document.getElementById('newPassword').value='';
+  document.getElementById('confirmPassword').value='';
+  closeModal('passwordModal');
+}
+
+// ── Biometric ──────────────────────────────────────────────────────────────
+function openBiometricModal(){showToast('Biometric setup coming soon');}
+
+// ── Notifications ──────────────────────────────────────────────────────────
+function setNotifUI(on){
+  const toggle=document.getElementById('notifToggle');
+  toggle.classList.toggle('on',on);
+  document.getElementById('notifStatus').textContent=on?'Enabled – you will receive alerts':'Disabled – you won\'t receive alerts';
+}
+
+async function toggleNotifications(){
+  const newVal=!document.getElementById('notifToggle').classList.contains('on');
+  setNotifUI(newVal);
+  await updateProfile({notifications_enabled:newVal},newVal?'Notifications enabled':'Notifications disabled');
+}
+
+// ── Currency ───────────────────────────────────────────────────────────────
+function openCurrencyModal(){updateCurrencyUI(_selectedCurrency);openModal('currencyModal');}
+
+function selectCurrency(code){
+  _selectedCurrency=code;
+  updateCurrencyUI(code);
+}
+
+function updateCurrencyUI(code){
+  document.querySelectorAll('.currency-option').forEach(el=>el.classList.remove('selected'));
+  const el=document.getElementById('cur_'+code);
+  if(el){el.classList.add('selected');el.querySelector('input').checked=true;}
+}
+
+async function saveCurrency(){
+  const btn=document.getElementById('saveCurrencyBtn');
+  btn.disabled=true;btn.textContent='Saving…';
+  const ok=await updateProfile({preferred_currency:_selectedCurrency},'Currency preference saved!');
+  btn.disabled=false;btn.textContent='Save Currency';
+  if(ok){
+    document.getElementById('currencyDisplay').textContent=CURRENCY_LABELS[_selectedCurrency]||_selectedCurrency;
+    closeModal('currencyModal');
+  }
+}
+
+// ── Transaction Limits ─────────────────────────────────────────────────────
+function openTransactionLimitModal(){
+  const limit=_profile.daily_transfer_limit||5000000;
+  showToast('Daily limit: ₦'+Number(limit).toLocaleString()+'. Contact support to change.');
+}
+
+// ── Delete Account ─────────────────────────────────────────────────────────
+function openDeleteAccountModal(){openModal('deleteModal');}
+
+async function deleteAccount(){
+  const val=document.getElementById('deleteConfirm').value;
+  if(val!=='DELETE'){showToast('Type DELETE to confirm.',false);return;}
+  showToast('Signing you out…');
+  await _sb.auth.signOut();
+  setTimeout(()=>{location.href='index.html';},1200);
+}
+</script>
+</body>
+</html>

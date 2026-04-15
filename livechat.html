@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Citibank – Live Chat</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+:root{--red:#E31837;--red-dark:#a0101f;--bg:#0a0a0a;--card:#161616;--border:rgba(255,255,255,0.07);--text:#fff;--muted:rgba(255,255,255,0.45);--nav-h:68px;}
+html,body{height:100%;background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--text);-webkit-font-smoothing:antialiased;}
+#shell{max-width:430px;margin:0 auto;height:100vh;display:flex;flex-direction:column;background:var(--bg);animation:fadeUp .4s ease both;}
+.topbar{display:flex;align-items:center;gap:14px;padding:52px 20px 16px;background:linear-gradient(180deg,rgba(227,24,55,0.06) 0%,transparent 100%);flex-shrink:0;}
+.back-btn{width:38px;height:38px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text);cursor:pointer;text-decoration:none;flex-shrink:0;}
+.agent-info{flex:1;}
+.agent-name{font-size:15px;font-weight:700;}
+.agent-status{font-size:12px;color:#4ade80;}
+.agent-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--red),var(--red-dark));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;}
+.chat-body{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px;padding-bottom:calc(var(--nav-h)+80px);}
+.chat-body::-webkit-scrollbar{width:0;}
+.msg{max-width:78%;display:flex;flex-direction:column;gap:4px;}
+.msg.bot{align-self:flex-start;}
+.msg.user{align-self:flex-end;}
+.bubble{padding:12px 16px;border-radius:18px;font-size:14px;line-height:1.5;}
+.msg.bot .bubble{background:var(--card);border:1px solid var(--border);border-bottom-left-radius:6px;}
+.msg.user .bubble{background:var(--red);border-bottom-right-radius:6px;}
+.msg-time{font-size:10px;color:var(--muted);padding:0 4px;}
+.msg.user .msg-time{text-align:right;}
+.typing-dots{display:flex;gap:4px;padding:14px 16px;background:var(--card);border:1px solid var(--border);border-radius:18px;border-bottom-left-radius:6px;width:fit-content;}
+.dot-anim{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:bounce .9s infinite;}
+.dot-anim:nth-child(2){animation-delay:.2s;}.dot-anim:nth-child(3){animation-delay:.4s;}
+.quick-replies{display:flex;gap:8px;flex-wrap:wrap;padding:0 16px 10px;}
+.qr{background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:20px;padding:8px 14px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.qr:hover{background:rgba(227,24,55,0.18);border-color:rgba(227,24,55,0.4);color:var(--red);}
+.input-bar{position:fixed;bottom:var(--nav-h);left:50%;transform:translateX(-50%);width:100%;max-width:430px;padding:10px 14px;background:rgba(14,14,14,.97);border-top:1px solid var(--border);backdrop-filter:blur(16px);display:flex;gap:10px;align-items:flex-end;z-index:90;}
+.chat-input{flex:1;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:22px;padding:12px 16px;color:white;font-size:15px;font-family:'DM Sans',sans-serif;outline:none;resize:none;max-height:100px;line-height:1.4;}
+.chat-input:focus{border-color:rgba(227,24,55,0.5);}
+.chat-input::placeholder{color:var(--muted);}
+.send-btn{width:44px;height:44px;border-radius:50%;background:var(--red);border:none;display:flex;align-items:center;justify-content:center;color:white;cursor:pointer;flex-shrink:0;transition:opacity .15s;}
+.send-btn:hover{opacity:.85;}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;height:var(--nav-h);background:rgba(14,14,14,.97);border-top:1px solid rgba(255,255,255,.08);backdrop-filter:blur(16px);display:flex;align-items:stretch;z-index:100;}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-decoration:none;color:var(--muted);font-size:10px;font-weight:600;cursor:pointer;transition:color .15s;border:none;background:none;font-family:'DM Sans',sans-serif;}
+.nav-item.active,.nav-item:hover{color:var(--red);}
+.nav-dot{width:4px;height:4px;border-radius:50%;background:var(--red);margin-top:-2px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes bounce{0%,80%,100%{transform:scale(0.7);opacity:.5}40%{transform:scale(1);opacity:1}}
+</style>
+</head>
+<body>
+<div id="shell">
+  <div class="topbar">
+    <a class="back-btn" href="contact.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></a>
+    <div class="agent-info"><div class="agent-name">Citibank Support</div><div class="agent-status">● Online now</div></div>
+    <div class="agent-avatar">CS</div>
+  </div>
+  <div class="chat-body" id="chatBody">
+    <div class="msg bot">
+      <div class="bubble" id="welcomeMsg">Hi! Welcome to Citibank Live Support. How can I help you today?</div>
+      <div class="msg-time" id="startTime"></div>
+    </div>
+  </div>
+  <div class="quick-replies" id="quickReplies">
+    <div class="qr" onclick="sendQuick(this)">Transfer issue</div>
+    <div class="qr" onclick="sendQuick(this)">Block my card</div>
+    <div class="qr" onclick="sendQuick(this)">Account balance</div>
+    <div class="qr" onclick="sendQuick(this)">Reset PIN</div>
+    <div class="qr" onclick="sendQuick(this)">Add card help</div>
+  </div>
+</div>
+
+<div class="input-bar">
+  <textarea class="chat-input" id="chatInput" placeholder="Type a message…" rows="1"
+    onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg();}"
+    oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
+  <button class="send-btn" onclick="sendMsg()">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+  </button>
+</div>
+
+<nav class="bottom-nav">
+  <a class="nav-item" href="dashboard.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</a>
+  <a class="nav-item" href="card.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Card</a>
+  <a class="nav-item" href="send.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Send</a>
+  <a class="nav-item" href="contact.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.9a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16.92z"/></svg>Contact Us</a>
+  <a class="nav-item active" href="livechat.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Live Chat<div class="nav-dot"></div></a>
+</nav>
+
+<script>
+const SUPABASE_URL='https://rgtbqipsdebekzznswll.supabase.co', SUPABASE_ANON_KEY='sb_publishable_QF5lXikZj0cRv1sipEFtyg_zqjw0eW1';
+const _sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+let _userName='';
+
+(async()=>{
+  const{data:{session}}=await _sb.auth.getSession();
+  if(!session){location.href='index.html';return;}
+  const{data:prof}=await _sb.from('profiles').select('first_name,full_name').eq('id',session.user.id).single();
+  _userName=(prof?.first_name)||((prof?.full_name||'').split(' ')[0])||'there';
+  document.getElementById('welcomeMsg').textContent='Hi '+_userName+'! 👋 Welcome to Citibank Live Support. How can I help you today?';
+  document.getElementById('startTime').textContent=timeStamp();
+})();
+
+const replies={
+  'transfer issue':'I understand you\'re having a transfer issue. Please share your transaction reference number so I can look into it right away.',
+  'block my card':'For your security I can initiate a card block immediately. Please confirm your registered phone number to proceed.',
+  'account balance':'I can see your account details. Please check your dashboard for the most up-to-date balance. Is there anything else?',
+  'reset pin':'To reset your PIN securely, I will send an OTP to your registered number. Should I proceed?',
+  'add card help':'To add a card, go to Card → Add New Card. Paystack will open inline — you won\'t leave the app. Your card is tokenized for future use without OTP.',
+  'default':'Thank you for reaching out! A Citibank support agent will be with you shortly. Queue #247 — average wait: 2 minutes.'
+};
+
+function timeStamp(){const d=new Date();return d.getHours()+':'+String(d.getMinutes()).padStart(2,'0');}
+function appendMsg(text,type){
+  const body=document.getElementById('chatBody');
+  const div=document.createElement('div');
+  div.className='msg '+type;
+  div.innerHTML='<div class="bubble">'+text+'</div><div class="msg-time">'+timeStamp()+'</div>';
+  body.appendChild(div);body.scrollTop=body.scrollHeight;
+}
+function showTyping(){
+  const body=document.getElementById('chatBody');
+  const t=document.createElement('div');
+  t.className='msg bot';t.id='typing';
+  t.innerHTML='<div class="typing-dots"><div class="dot-anim"></div><div class="dot-anim"></div><div class="dot-anim"></div></div>';
+  body.appendChild(t);body.scrollTop=body.scrollHeight;
+}
+function removeTyping(){const t=document.getElementById('typing');if(t)t.remove();}
+function botReply(userText){
+  showTyping();
+  const key=Object.keys(replies).find(k=>userText.toLowerCase().includes(k))||'default';
+  setTimeout(()=>{removeTyping();appendMsg(replies[key],'bot');},1400);
+}
+function sendMsg(){
+  const inp=document.getElementById('chatInput');
+  const text=inp.value.trim();
+  if(!text)return;
+  appendMsg(text,'user');
+  inp.value='';inp.style.height='auto';
+  document.getElementById('quickReplies').style.display='none';
+  botReply(text);
+}
+function sendQuick(el){
+  const text=el.textContent;
+  appendMsg(text,'user');
+  document.getElementById('quickReplies').style.display='none';
+  botReply(text);
+}
+</script>
+</body>
+</html>
