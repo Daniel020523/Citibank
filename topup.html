@@ -87,15 +87,6 @@ html,body{min-height:100vh;background:var(--bg);font-family:'DM Sans',sans-serif
     <span class="page-title">Top Up Balance</span>
   </div>
 
-  <div class="balance-pill">
-    <div>
-      <div class="balance-pill-label">Current Balance</div>
-      <!-- Hardcoded $ symbol — balance is stored in NGN internally but shown as $ to user -->
-      <div class="balance-pill-value"><span class="balance-pill-currency">$</span><span id="currentBal">0.00</span></div>
-    </div>
-    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="rgba(227,24,55,0.5)" stroke-width="1.5"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-  </div>
-
   <!-- Amount label shows $ but actual charge runs in NGN via Paystack -->
 
   <div class="amount-section">
@@ -134,18 +125,14 @@ html,body{min-height:100vh;background:var(--bg);font-family:'DM Sans',sans-serif
       <span class="sum-val" id="sumAmt">$0.00</span>
     </div>
     <div class="summary-row">
-      <span class="sum-label">Processing Fee (1.5%)</span>
-      <span class="sum-val" id="sumFee">$0.00</span>
-    </div>
-    <div class="summary-row">
-      <span class="sum-label">New Balance</span>
-      <span class="sum-val" id="sumNewBal">$0.00</span>
+      <span class="sum-label">Conversion Fee (₦1,150/$)</span>
+      <span class="sum-val" id="sumFee">₦0.00</span>
     </div>
   </div>
 
   <button class="btn" id="topupBtn" onclick="doTopUp()">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="vertical-align:middle;margin-right:8px"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-    Top Up Now
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="vertical-align:middle;margin-right:8px"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    Send to Selected Card
   </button>
 </div>
 
@@ -178,7 +165,7 @@ let _profile=null,_session=null,_cards=[],_selectedCard=null;
 
 // Exchange rate: 1 "display dollar" = this many NGN kobo
 // All charges run in NGN. User sees $ but it is NGN under the hood.
-const USD_TO_NGN = 1600; // update as needed or fetch from profile
+const USD_TO_NGN = 1150; // update as needed or fetch from profile
 
 (async()=>{
   const {data:{session}}=await _sb.auth.getSession();
@@ -186,10 +173,6 @@ const USD_TO_NGN = 1600; // update as needed or fetch from profile
   _session=session;
   const {data:prof}=await _sb.from('profiles').select('*').eq('id',session.user.id).single();
   _profile=prof||{balance:0};
-  // Balance is stored in NGN; convert to "display dollars" for user
-  const balanceNgn=parseFloat(_profile.balance||0);
-  const balanceDisplay=(balanceNgn/USD_TO_NGN).toFixed(2);
-  document.getElementById('currentBal').textContent=Number(balanceDisplay).toLocaleString('en-US',{minimumFractionDigits:2});
   updateSummary();
   await loadCards();
   document.getElementById('pageLoader').style.display='none';
@@ -254,13 +237,9 @@ function onAmountInput(){
 
 function updateSummary(){
   const amt=parseFloat(document.getElementById('topupAmount').value)||0;
-  const fee=amt>0?+(amt*0.015).toFixed(2):0;
-  // New balance: current NGN balance converted to display dollars + new top-up amount
-  const currentBalDisplay=parseFloat(_profile?.balance||0)/USD_TO_NGN;
-  const newBal=(currentBalDisplay+amt);
+  const ngnTotal=amt>0?Math.round(amt*USD_TO_NGN):0;
   document.getElementById('sumAmt').textContent='$'+amt.toLocaleString('en-US',{minimumFractionDigits:2});
-  document.getElementById('sumFee').textContent='$'+fee.toLocaleString('en-US',{minimumFractionDigits:2});
-  document.getElementById('sumNewBal').textContent='$'+newBal.toLocaleString('en-US',{minimumFractionDigits:2});
+  document.getElementById('sumFee').textContent='₦'+ngnTotal.toLocaleString('en-NG');
 }
 
 async function doTopUp(){
@@ -302,7 +281,7 @@ async function doTopUp(){
       const msg=data?.message||fnErr?.message||'Charge failed. Please try again.';
       showToast(msg,false);
       btn.disabled=false;
-      btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="vertical-align:middle;margin-right:8px"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Top Up Now';
+      btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="vertical-align:middle;margin-right:8px"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Send to Selected Card';
       return;
     }
     // Update local profile balance (stored in NGN)
@@ -316,7 +295,7 @@ async function doTopUp(){
     console.error('Top-up error:',e);
     showToast('Unexpected error. Please try again.',false);
     btn.disabled=false;
-    btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="vertical-align:middle;margin-right:8px"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Top Up Now';
+    btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="vertical-align:middle;margin-right:8px"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Send to Selected Card';
   }
 }
 
