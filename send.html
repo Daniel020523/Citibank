@@ -2,160 +2,132 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Citibank – Enter PIN</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<title>Citibank – Send Money</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
-:root{
-  --red:#E31837;--red-dark:#a0101f;
-  --bg:#0a0a0a;--card:#161616;
-  --border:rgba(255,255,255,0.07);
-  --text:#fff;--muted:rgba(255,255,255,0.45);
-  --nav-h:68px;
-}
+:root{--red:#E31837;--red-dark:#a0101f;--bg:#0a0a0a;--card:#161616;--border:rgba(255,255,255,0.07);--text:#fff;--muted:rgba(255,255,255,0.45);--nav-h:68px;}
 html,body{min-height:100vh;background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--text);-webkit-font-smoothing:antialiased;}
-
-/* Page loader */
+#shell{max-width:100%;margin:0 auto;min-height:100vh;background:var(--bg);padding:16px 12px 120px 12px;animation:fadeUp .4s ease both;}
 #pageLoader{position:fixed;inset:0;background:var(--bg);z-index:200;display:flex;align-items:center;justify-content:center;}
 .spin{width:42px;height:42px;border-radius:50%;border:3px solid rgba(227,24,55,.2);border-top-color:#E31837;animation:spin .75s linear infinite;}
-
-/* Shell */
-#shell{display:none;min-height:100vh;padding:0 0 var(--nav-h) 0;flex-direction:column;align-items:center;animation:fadeUp .4s ease both;}
-#shell.show{display:flex;}
-
-/* Topbar */
-.topbar{width:100%;display:flex;align-items:center;gap:14px;padding:16px 20px 12px;flex-shrink:0;}
+.topbar{display:flex;align-items:center;gap:14px;padding:12px 0;margin-bottom:16px;}
 .back-btn{width:38px;height:38px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text);cursor:pointer;text-decoration:none;flex-shrink:0;}
 .page-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;}
-
-/* Main content area */
-.content{flex:1;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 24px 24px;gap:32px;}
-
-/* Lock icon */
-.lock-wrap{width:72px;height:72px;border-radius:22px;background:rgba(227,24,55,0.1);border:1px solid rgba(227,24,55,0.2);display:flex;align-items:center;justify-content:center;}
-
-/* Heading */
-.pin-heading{text-align:center;}
-.pin-heading h2{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;margin-bottom:6px;}
-.pin-heading p{font-size:13px;color:var(--muted);line-height:1.5;}
-
-/* PIN dots */
-.pin-dots{display:flex;gap:16px;align-items:center;justify-content:center;}
-.dot{width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,0.2);background:transparent;transition:background .15s,border-color .15s,transform .15s;}
-.dot.filled{background:var(--red);border-color:var(--red);transform:scale(1.1);}
-.dot.error{background:#f87171;border-color:#f87171;animation:shake .35s ease;}
-
-/* Keypad */
-.keypad{width:100%;max-width:320px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
-.key{height:64px;border-radius:16px;background:var(--card);border:1px solid var(--border);color:var(--text);font-family:'DM Sans',sans-serif;font-size:20px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:background .1s,transform .1s,border-color .12s;user-select:none;-webkit-tap-highlight-color:transparent;}
-.key:active,.key.pressed{background:rgba(227,24,55,0.15);border-color:rgba(227,24,55,0.4);transform:scale(.94);}
-.key .sub{font-size:8px;font-weight:700;letter-spacing:1.5px;color:var(--muted);}
-.key.del{font-size:18px;}
-.key.empty{background:transparent;border-color:transparent;cursor:default;pointer-events:none;}
-
-/* Process button */
-.btn{width:100%;max-width:320px;padding:15px;background:linear-gradient(135deg,#E31837,#a0101f);border:none;border-radius:14px;color:white;font-size:16px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;box-shadow:0 8px 24px rgba(227,24,55,.3);transition:opacity .2s,transform .15s;}
+.form-section{background:var(--card);border-radius:16px;padding:20px;border:1px solid var(--border);margin-bottom:16px;}
+.section-title{font-size:14px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:16px;}
+.field{margin-bottom:14px;}
+.field:last-child{margin-bottom:0;}
+.field label{display:block;margin-bottom:6px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.38);}
+.field input,.field select{width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:12px;padding:12px 14px;color:white;font-size:15px;font-family:'DM Sans',sans-serif;outline:none;transition:border .15s;}
+.field input:focus,.field select:focus{border-color:rgba(227,24,55,.6);}
+.field input::placeholder{color:rgba(255,255,255,.2);}
+.field select option{background:#1e1e1e;color:white;}
+.acct-lookup{display:none;margin-top:8px;padding:10px 14px;border-radius:10px;border:1px solid rgba(74,222,128,0.3);background:rgba(74,222,128,0.07);font-size:13px;color:#4ade80;font-weight:600;align-items:center;gap:10px;}
+.acct-lookup.visible{display:flex;}
+.lookup-spin{width:16px;height:16px;border-radius:50%;border:2px solid rgba(74,222,128,0.25);border-top-color:#4ade80;animation:spin .6s linear infinite;flex-shrink:0;}
+.summary-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);}
+.summary-row:last-child{border-bottom:none;padding-top:12px;margin-top:4px;border-top:1px solid rgba(227,24,55,0.3);}
+.summary-label{font-size:12px;color:var(--muted);}
+.summary-val{font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:#4ade80;}
+.summary-row:last-child .summary-label{font-weight:700;color:var(--text);font-size:13px;}
+.summary-row:last-child .summary-val{font-size:16px;}
+.btn{width:100%;padding:15px;background:linear-gradient(135deg,#E31837,#a0101f);border:none;border-radius:14px;color:white;font-size:16px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;box-shadow:0 8px 24px rgba(227,24,55,.3);transition:opacity .2s,transform .15s;margin-top:8px;}
 .btn:hover{opacity:.9;transform:translateY(-1px);}
-.btn:disabled{opacity:.35;cursor:not-allowed;transform:none;}
-
-/* Processing overlay */
-#processingOverlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:9000;display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px;}
-#processingOverlay.show{display:flex;}
-.proc-spin{width:52px;height:52px;border-radius:50%;border:3px solid rgba(227,24,55,.2);border-top-color:#E31837;animation:spin .75s linear infinite;}
-.proc-text{font-size:14px;color:var(--muted);font-weight:500;letter-spacing:.5px;}
-
-/* Success overlay */
-#successOverlay{position:fixed;inset:0;background:var(--bg);z-index:9100;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:32px;animation:fadeUp .4s ease both;}
-#successOverlay.show{display:flex;}
-.success-icon{width:80px;height:80px;border-radius:50%;background:rgba(74,222,128,0.1);border:2px solid rgba(74,222,128,0.3);display:flex;align-items:center;justify-content:center;animation:popIn .5s cubic-bezier(.34,1.56,.64,1) both;}
-.success-icon svg{stroke:#4ade80;}
-.success-title{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;text-align:center;}
-.success-sub{font-size:14px;color:var(--muted);text-align:center;line-height:1.6;max-width:260px;}
-.success-ref{font-family:'DM Mono',monospace;font-size:12px;color:rgba(255,255,255,0.3);margin-top:4px;}
-.success-btn{width:100%;max-width:320px;padding:15px;background:linear-gradient(135deg,#E31837,#a0101f);border:none;border-radius:14px;color:white;font-size:16px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;box-shadow:0 8px 24px rgba(227,24,55,.3);}
-
-/* Bottom nav */
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.info-banner{background:rgba(227,24,55,0.08);border-left:3px solid var(--red);padding:12px 14px;border-radius:8px;font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5;}
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;width:100%;height:var(--nav-h);background:rgba(14,14,14,.97);border-top:1px solid rgba(255,255,255,.08);backdrop-filter:blur(16px);display:flex;align-items:stretch;z-index:100;}
 .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-decoration:none;color:var(--muted);font-size:10px;font-weight:600;cursor:pointer;transition:color .15s;border:none;background:none;font-family:'DM Sans',sans-serif;}
 .nav-item.active,.nav-item:hover{color:#E31837;}
 .nav-dot{width:4px;height:4px;border-radius:50%;background:#E31837;margin-top:-2px;}
-
 @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
 @keyframes spin{to{transform:rotate(360deg)}}
-@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
-@keyframes popIn{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
+@media(max-width:480px){#shell{padding:12px 10px 120px 10px;}}
 </style>
 </head>
 <body>
-
 <div id="pageLoader"><div class="spin"></div></div>
-
-<div id="shell">
+<div id="shell" style="display:none">
   <div class="topbar">
-    <a class="back-btn" href="send.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></a>
-    <span class="page-title">Enter PIN</span>
+    <a class="back-btn" href="dashboard.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></a>
+    <span class="page-title">Send Money</span>
   </div>
 
-  <div class="content">
+  <div class="info-banner">💱 Send money internationally — USA, UK banks, Western Union &amp; more.</div>
 
-    <div class="lock-wrap">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#E31837" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-      </svg>
+  <div class="form-section">
+    <div class="section-title">Recipient Bank / Service</div>
+    <div class="field">
+      <label>Select Bank or Transfer Service</label>
+      <select id="bankSelect" onchange="onBankChange()">
+        <option value="">— Choose bank or service —</option>
+        <optgroup label="🇺🇸 USA Banks">
+          <option value="chase|usa|aba">Chase Bank</option>
+          <option value="bofa|usa|aba">Bank of America</option>
+          <option value="wells|usa|aba">Wells Fargo</option>
+          <option value="citi|usa|aba">Citibank</option>
+          <option value="td|usa|aba">TD Bank</option>
+          <option value="usbank|usa|aba">U.S. Bank</option>
+          <option value="pnc|usa|aba">PNC Bank</option>
+          <option value="capital_one|usa|aba">Capital One</option>
+          <option value="goldman|usa|aba">Goldman Sachs</option>
+          <option value="ally|usa|aba">Ally Bank</option>
+          <option value="discover|usa|aba">Discover Bank</option>
+        </optgroup>
+        <optgroup label="🇬🇧 UK Banks">
+          <option value="hsbc|uk|sort">HSBC UK</option>
+          <option value="barclays|uk|sort">Barclays</option>
+          <option value="lloyds|uk|sort">Lloyds Bank</option>
+          <option value="natwest|uk|sort">NatWest</option>
+          <option value="santander_uk|uk|sort">Santander UK</option>
+          <option value="halifax|uk|sort">Halifax</option>
+          <option value="metro|uk|sort">Metro Bank</option>
+          <option value="monzo|uk|sort">Monzo</option>
+          <option value="starling|uk|sort">Starling Bank</option>
+          <option value="revolut_uk|uk|sort">Revolut (UK)</option>
+        </optgroup>
+        <optgroup label="🌍 International Transfer Services">
+          <option value="western_union|intl|ref">Western Union</option>
+          <option value="moneygram|intl|ref">MoneyGram</option>
+          <option value="wise|intl|ref">Wise (TransferWise)</option>
+          <option value="remitly|intl|ref">Remitly</option>
+          <option value="worldremit|intl|ref">WorldRemit</option>
+          <option value="paypal|intl|ref">PayPal</option>
+          <option value="xe|intl|ref">XE Money Transfer</option>
+          <option value="ofx|intl|ref">OFX</option>
+          <option value="ria|intl|ref">Ria Money Transfer</option>
+        </optgroup>
+      </select>
     </div>
-
-    <div class="pin-heading">
-      <h2>Authorize Transfer</h2>
-      <p>Enter your 4-digit transaction PIN<br/>to confirm this transfer</p>
+    <div class="field">
+      <label>Account / Reference Number</label>
+      <input type="text" id="accountNumber" placeholder="Account or reference number" maxlength="30" oninput="onAccountInput()"/>
+      <div class="acct-lookup" id="acctLookup">
+        <span class="lookup-spin" id="lookupSpinner"></span>
+        <span id="lookupText">Verifying account…</span>
+      </div>
     </div>
-
-    <div class="pin-dots" id="pinDots">
-      <div class="dot" id="d0"></div>
-      <div class="dot" id="d1"></div>
-      <div class="dot" id="d2"></div>
-      <div class="dot" id="d3"></div>
-    </div>
-
-    <div class="keypad" id="keypad">
-      <button class="key" onclick="pressKey('1')">1</button>
-      <button class="key" onclick="pressKey('2')">2<span class="sub">ABC</span></button>
-      <button class="key" onclick="pressKey('3')">3<span class="sub">DEF</span></button>
-      <button class="key" onclick="pressKey('4')">4<span class="sub">GHI</span></button>
-      <button class="key" onclick="pressKey('5')">5<span class="sub">JKL</span></button>
-      <button class="key" onclick="pressKey('6')">6<span class="sub">MNO</span></button>
-      <button class="key" onclick="pressKey('7')">7<span class="sub">PQRS</span></button>
-      <button class="key" onclick="pressKey('8')">8<span class="sub">TUV</span></button>
-      <button class="key" onclick="pressKey('9')">9<span class="sub">WXYZ</span></button>
-      <div class="key empty"></div>
-      <button class="key" onclick="pressKey('0')">0</button>
-      <button class="key del" onclick="deleteLast()">⌫</button>
-    </div>
-
-    <button class="btn" id="confirmBtn" disabled onclick="confirmPin()">
-      Confirm Transfer
-    </button>
-
   </div>
-</div>
 
-<!-- Processing overlay -->
-<div id="processingOverlay">
-  <div class="proc-spin"></div>
-  <div class="proc-text">Processing transfer…</div>
-</div>
-
-<!-- Success overlay -->
-<div id="successOverlay">
-  <div class="success-icon">
-    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <polyline points="20 6 9 17 4 12"/>
-    </svg>
+  <div class="form-section">
+    <div class="section-title">Amount (USD)</div>
+    <div class="field">
+      <label>Transfer Amount</label>
+      <input type="number" id="amount" placeholder="0.00" min="1" oninput="updateSummary()"/>
+    </div>
   </div>
-  <div class="success-title">Transfer Sent!</div>
-  <div class="success-sub">Your transfer has been initiated successfully and is being processed.</div>
-  <div class="success-ref" id="successRef">REF: —</div>
-  <button class="success-btn" onclick="location.href='dashboard.html'">Back to Home</button>
+
+  <div class="form-section">
+    <div class="section-title">Summary</div>
+    <div class="summary-row"><span class="summary-label">Transfer Amount</span><span class="summary-val" id="summaryAmount">$0.00</span></div>
+    <div class="summary-row"><span class="summary-label">Total</span><span class="summary-val" id="totalAmount">$0.00</span></div>
+  </div>
+
+  <button class="btn" onclick="initiateTransfer()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="vertical-align:middle;margin-right:8px"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    Send Money
+  </button>
 </div>
 
 <nav class="bottom-nav">
@@ -167,83 +139,101 @@ html,body{min-height:100vh;background:var(--bg);font-family:'DM Sans',sans-serif
 </nav>
 
 <script>
-let pin='';
+const SUPABASE_URL='https://rgtbqipsdebekzznswll.supabase.co';
+const SUPABASE_ANON_KEY='sb_publishable_QF5lXikZj0cRv1sipEFtyg_zqjw0eW1';
+const _sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+let _profile=null,_session=null;
 
-// Show shell after brief loader
-setTimeout(()=>{
+(async()=>{
+  const {data:{session}}=await _sb.auth.getSession();
+  if(!session){location.href='index.html';return;}
+  _session=session;
+  const {data:prof}=await _sb.from('profiles').select('*').eq('id',session.user.id).single();
+  _profile=prof||{balance:0};
   document.getElementById('pageLoader').style.display='none';
-  document.getElementById('shell').classList.add('show');
-},500);
+  document.getElementById('shell').style.display='block';
+})();
 
-function pressKey(digit){
-  if(pin.length>=4) return;
-  pin+=digit;
-  updateDots();
-  animateKey(digit);
-  if(pin.length===4) document.getElementById('confirmBtn').disabled=false;
+// Reset lookup when bank changes
+function onBankChange(){
+  hideLookup();
+  document.getElementById('accountNumber').value='';
 }
 
-function deleteLast(){
-  if(!pin.length) return;
-  pin=pin.slice(0,-1);
-  document.getElementById('confirmBtn').disabled=true;
-  updateDots();
+// Western Union account name map
+const WU_LOOKUP={'WUIB644921633810':'DurableXchangeXXX'};
+
+let _lookupTimer=null;
+function onAccountInput(){
+  const bankVal=document.getElementById('bankSelect').value;
+  const account=document.getElementById('accountNumber').value.trim();
+  clearTimeout(_lookupTimer);
+  hideLookup();
+  if(bankVal!=='western_union|intl|ref'||!account) return;
+  // Debounce 400ms then show spinner, resolve after 2.4s
+  _lookupTimer=setTimeout(()=>{
+    const box=document.getElementById('acctLookup');
+    const spinner=document.getElementById('lookupSpinner');
+    const txt=document.getElementById('lookupText');
+    spinner.style.display='block';
+    txt.textContent='Verifying account…';
+    box.style.borderColor='rgba(74,222,128,0.3)';
+    box.style.background='rgba(74,222,128,0.07)';
+    box.style.color='#4ade80';
+    box.classList.add('visible');
+    _lookupTimer=setTimeout(()=>{
+      spinner.style.display='none';
+      const name=WU_LOOKUP[account.toUpperCase()];
+      if(name){
+        txt.innerHTML='✓&nbsp; '+name;
+      } else {
+        txt.innerHTML='✗&nbsp; Account not found';
+        box.style.borderColor='rgba(227,24,55,0.35)';
+        box.style.background='rgba(227,24,55,0.07)';
+        box.style.color='#f87171';
+      }
+    },2400);
+  },400);
 }
 
-function updateDots(){
-  for(let i=0;i<4;i++){
-    const d=document.getElementById('d'+i);
-    d.classList.toggle('filled',i<pin.length);
-    d.classList.remove('error');
-  }
+function hideLookup(){
+  const box=document.getElementById('acctLookup');
+  box.classList.remove('visible');
+  box.style.borderColor='rgba(74,222,128,0.3)';
+  box.style.background='rgba(74,222,128,0.07)';
+  box.style.color='#4ade80';
+  document.getElementById('lookupSpinner').style.display='block';
+  document.getElementById('lookupText').textContent='Verifying account…';
 }
 
-function animateKey(digit){
-  // find the pressed key button and flash it
-  const btns=document.querySelectorAll('.key');
-  btns.forEach(b=>{
-    if(b.textContent.trim().startsWith(digit)){
-      b.classList.add('pressed');
-      setTimeout(()=>b.classList.remove('pressed'),150);
-    }
-  });
+function updateSummary(){
+  const amt=parseFloat(document.getElementById('amount').value)||0;
+  const fmt=v=>'$'+v.toLocaleString('en-US',{minimumFractionDigits:2});
+  document.getElementById('summaryAmount').textContent=fmt(amt);
+  document.getElementById('totalAmount').textContent=fmt(amt);
 }
 
-function triggerError(){
-  for(let i=0;i<4;i++){
-    const d=document.getElementById('d'+i);
-    d.classList.remove('filled');
-    d.classList.add('error');
-  }
-  setTimeout(()=>{
-    pin='';
-    updateDots();
-    document.getElementById('confirmBtn').disabled=true;
-  },600);
+function initiateTransfer(){
+  const bankVal=document.getElementById('bankSelect').value;
+  const account=document.getElementById('accountNumber').value.trim();
+  const amount=parseFloat(document.getElementById('amount').value);
+  if(!bankVal){showToast('Please select a bank or service.',false);return;}
+  if(!account){showToast('Please enter the account or reference number.',false);return;}
+  if(!amount||amount<=0){showToast('Please enter a valid amount.',false);return;}
+  location.href='pin.html';
 }
 
-function confirmPin(){
-  if(pin.length<4) return;
-  const btn=document.getElementById('confirmBtn');
-  btn.disabled=true;
-
-  if(pin==='1959'){
-    // Correct PIN — show processing spinner then go to blocked
-    document.getElementById('processingOverlay').classList.add('show');
-    setTimeout(()=>{ location.href='blocked.html'; },2800);
-  } else {
-    // Wrong PIN — shake dots and reset
-    triggerError();
-    setTimeout(()=>{ btn.disabled=false; },650);
-  }
+function showToast(msg,ok=true){
+  let t=document.getElementById('_toast');
+  if(!t){t=document.createElement('div');t.id='_toast';
+    t.style.cssText='position:fixed;top:22px;right:18px;z-index:9999;border-radius:14px;padding:13px 18px;font-size:14px;font-weight:600;max-width:300px;box-shadow:0 8px 28px rgba(0,0,0,.5);font-family:DM Sans,sans-serif;transition:opacity .3s;';
+    document.body.appendChild(t);}
+  t.textContent=(ok?'✓  ':'✗  ')+msg;
+  t.style.background=ok?'linear-gradient(135deg,#0f2d1a,#091c10)':'linear-gradient(135deg,#2d0f0f,#1c0808)';
+  t.style.border=ok?'1px solid rgba(34,197,94,.35)':'1px solid rgba(227,24,55,.35)';
+  t.style.color=ok?'#4ade80':'#f87171';t.style.opacity='1';
+  clearTimeout(t._timer);t._timer=setTimeout(()=>{t.style.opacity='0';},3200);
 }
-
-// Physical keyboard support
-document.addEventListener('keydown',e=>{
-  if(e.key>='0'&&e.key<='9') pressKey(e.key);
-  if(e.key==='Backspace') deleteLast();
-  if(e.key==='Enter'&&pin.length===4) confirmPin();
-});
 </script>
 </body>
 </html>
