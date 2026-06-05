@@ -4,51 +4,36 @@
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Citibank – Account Restricted</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 :root{--red:#E31837;--bg:#0a0a0a;--card:#161616;--border:rgba(255,255,255,0.07);--text:#fff;--muted:rgba(255,255,255,0.45);--nav-h:68px;}
 html,body{min-height:100vh;background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--text);-webkit-font-smoothing:antialiased;}
-
 #shell{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px var(--nav-h);animation:fadeUp .5s ease both;}
-
-/* Shield icon */
 .shield-wrap{position:relative;width:90px;height:90px;margin-bottom:4px;}
 .shield-bg{width:90px;height:90px;border-radius:28px;background:rgba(227,24,55,0.1);border:1.5px solid rgba(227,24,55,0.25);display:flex;align-items:center;justify-content:center;animation:pulseRed 2.5s ease-in-out infinite;}
 .badge{position:absolute;bottom:-6px;right:-6px;width:26px;height:26px;border-radius:50%;background:#E31837;border:2px solid var(--bg);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:white;}
-
-/* Card */
 .block-card{width:100%;max-width:360px;background:var(--card);border:1px solid rgba(227,24,55,0.2);border-radius:20px;padding:28px 24px;margin-top:28px;}
 .block-card-title{font-family:'Playfair Display',serif;font-size:21px;font-weight:700;margin-bottom:10px;color:white;}
 .block-card-body{font-size:14px;color:var(--muted);line-height:1.75;}
 .block-card-body strong{color:rgba(255,255,255,0.8);}
-
-/* Reference row */
 .ref-row{margin-top:20px;padding:12px 14px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
 .ref-label{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);}
 .ref-val{font-family:'DM Mono',monospace;font-size:12px;color:rgba(255,255,255,0.5);}
-
-/* Divider */
 .divider{width:100%;max-width:360px;height:1px;background:var(--border);margin:24px 0;}
-
-/* What to do section */
 .steps-title{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;width:100%;max-width:360px;text-align:left;}
 .step{display:flex;align-items:flex-start;gap:12px;width:100%;max-width:360px;margin-bottom:14px;}
 .step-num{width:26px;height:26px;border-radius:8px;background:rgba(227,24,55,0.12);border:1px solid rgba(227,24,55,0.2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#E31837;flex-shrink:0;margin-top:1px;}
 .step-text{font-size:13px;color:var(--muted);line-height:1.6;}
 .step-text strong{color:rgba(255,255,255,0.75);}
-
-/* CTA buttons */
 .cta-wrap{width:100%;max-width:360px;display:flex;flex-direction:column;gap:10px;margin-top:8px;}
 .btn-primary{width:100%;padding:15px;background:linear-gradient(135deg,#E31837,#a0101f);border:none;border-radius:14px;color:white;font-size:15px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;box-shadow:0 8px 24px rgba(227,24,55,.25);transition:opacity .2s,transform .15s;text-decoration:none;display:block;text-align:center;}
 .btn-primary:hover{opacity:.9;transform:translateY(-1px);}
 .btn-ghost{width:100%;padding:14px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:14px;color:rgba(255,255,255,0.6);font-size:15px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:background .15s;text-decoration:none;display:block;text-align:center;}
 .btn-ghost:hover{background:rgba(255,255,255,0.07);}
-
-/* Bottom nav */
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;width:100%;height:var(--nav-h);background:rgba(14,14,14,.97);border-top:1px solid rgba(255,255,255,.08);backdrop-filter:blur(16px);display:flex;align-items:stretch;z-index:100;}
 .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-decoration:none;color:var(--muted);font-size:10px;font-weight:600;transition:color .15s;border:none;background:none;font-family:'DM Sans',sans-serif;}
 .nav-item:hover{color:#E31837;}
-
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 @keyframes pulseRed{0%,100%{box-shadow:0 0 0 0 rgba(227,24,55,0)}50%{box-shadow:0 0 0 10px rgba(227,24,55,0.08)}}
 </style>
@@ -56,7 +41,6 @@ html,body{min-height:100vh;background:var(--bg);font-family:'DM Sans',sans-serif
 <body>
 
 <div id="shell">
-
   <div class="shield-wrap">
     <div class="shield-bg">
       <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#E31837" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -101,9 +85,9 @@ html,body{min-height:100vh;background:var(--bg);font-family:'DM Sans',sans-serif
 
   <div class="cta-wrap">
     <a class="btn-primary" href="contact.html">Contact Support</a>
+    <!-- Dashboard link goes nowhere useful for blocked users — kept for UI only -->
     <a class="btn-ghost" href="dashboard.html">Back to Dashboard</a>
   </div>
-
 </div>
 
 <nav class="bottom-nav">
@@ -115,7 +99,28 @@ html,body{min-height:100vh;background:var(--bg);font-family:'DM Sans',sans-serif
 </nav>
 
 <script>
-// Generate a restriction reference ID
+const SUPABASE_URL      = 'https://rgtbqipsdebekzznswll.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_QF5lXikZj0cRv1sipEFtyg_zqjw0eW1';
+const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ── Auth guard: must be logged in to see this page ───────────────────────────
+(async()=>{
+  const {data:{session}} = await _sb.auth.getSession();
+  if(!session){ location.replace('index.html'); return; }
+})();
+
+// ── Back-button trap ─────────────────────────────────────────────────────────
+// Push two identical entries so the user has "nowhere to go back to"
+// Any attempt to go back fires popstate → send to index.html (login)
+history.pushState({blocked:true}, '', 'blocked.html');
+history.pushState({blocked:true}, '', 'blocked.html');
+
+window.addEventListener('popstate', function(){
+  // Whenever back is pressed from blocked.html → go to login
+  location.replace('index.html');
+});
+
+// ── Restriction reference ────────────────────────────────────────────────────
 document.getElementById('restrictionRef').textContent =
   'RST-' + Date.now().toString(36).toUpperCase().slice(-8);
 </script>
