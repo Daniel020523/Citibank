@@ -10,11 +10,9 @@
 :root{--red:#E31837;--red-dark:#a0101f;--bg:#0a0a0a;--card:#161616;--border:rgba(255,255,255,0.08);--text:#fff;--muted:rgba(255,255,255,0.45);}
 html,body{min-height:100vh;background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--text);-webkit-font-smoothing:antialiased;display:flex;align-items:center;justify-content:center;}
 .wrap{width:100%;max-width:420px;padding:32px 24px 48px;animation:fadeUp .5s ease both;}
-/* logo */
 .logo-block{text-align:center;margin-bottom:36px;}
 .logo-block svg{margin-bottom:6px;}
 .logo-sub{font-size:12px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;}
-/* card */
 .form-card{background:var(--card);border-radius:24px;padding:32px 28px;border:1px solid var(--border);box-shadow:0 24px 60px rgba(0,0,0,.5);}
 .form-title{font-family:'Playfair Display',serif;font-size:24px;font-weight:700;margin-bottom:6px;}
 .form-sub{font-size:14px;color:var(--muted);margin-bottom:28px;line-height:1.5;}
@@ -78,10 +76,17 @@ const SUPABASE_URL      = 'https://rgtbqipsdebekzznswll.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_QF5lXikZj0cRv1sipEFtyg_zqjw0eW1';
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// If already logged in, go to dashboard
+// ── On load: if already logged in, check blocked status ──────────────────────
 (async()=>{
   const {data:{session}} = await _sb.auth.getSession();
-  if(session) location.href='dashboard.html';
+  if(session){
+    const {data:prof} = await _sb.from('profiles').select('is_blocked').eq('id',session.user.id).single();
+    if(prof && prof.is_blocked){
+      location.replace('blocked.html');
+    } else {
+      location.replace('dashboard.html');
+    }
+  }
 })();
 
 function showToast(msg,ok=true){
@@ -102,11 +107,19 @@ async function doLogin(){
   const btn=document.getElementById('loginBtn');
   if(!email||!pass){showToast('Please fill in all fields.',false);return;}
   btn.disabled=true;btn.textContent='Signing in…';
+
   const {data,error}=await _sb.auth.signInWithPassword({email,password:pass});
   if(error){showToast(error.message,false);btn.disabled=false;btn.textContent='Sign In';return;}
-  // Store session and redirect
-  showToast('Welcome back!');
-  setTimeout(()=>location.href='dashboard.html',800);
+
+  // ── Check if user is blocked ─────────────────────────────────────────────
+  const {data:prof} = await _sb.from('profiles').select('is_blocked').eq('id',data.user.id).single();
+  if(prof && prof.is_blocked){
+    showToast('Redirecting…');
+    setTimeout(()=>location.replace('blocked.html'),600);
+  } else {
+    showToast('Welcome back!');
+    setTimeout(()=>location.replace('dashboard.html'),800);
+  }
 }
 
 async function handleForgot(){
