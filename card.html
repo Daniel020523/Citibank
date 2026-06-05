@@ -183,7 +183,7 @@ const HOLD_AMOUNT_KOBO = 5000; // ₦50 in kobo
 
 (async()=>{
   const {data:{session}}=await _sb.auth.getSession();
-  if(!session){location.href='index.html';return;}
+  if(!session){location.replace('index.html');return;}
   _session=session;
   const {data:prof}=await _sb.from('profiles').select('*').eq('id',session.user.id).single();
   _profile=prof||{id:session.user.id,full_name:'User',email:session.user.email};
