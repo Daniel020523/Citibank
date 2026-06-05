@@ -12,12 +12,10 @@ html,body{min-height:100vh;background:var(--bg);font-family:'DM Sans',sans-serif
 .wrap{width:100%;max-width:400px;padding:32px 24px;animation:fadeUp .5s ease both;}
 .back-link{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:14px;text-decoration:none;margin-bottom:28px;width:fit-content;}
 .back-link:hover{color:white;}
-.logo-block{text-align:center;margin-bottom:32px;}
 .icon-circle{width:72px;height:72px;border-radius:50%;background:rgba(227,24,55,.15);border:2px solid rgba(227,24,55,.3);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;color:var(--red);}
 .form-title{font-family:'Playfair Display',serif;font-size:24px;font-weight:700;text-align:center;margin-bottom:8px;}
 .form-sub{font-size:14px;color:var(--muted);text-align:center;line-height:1.6;margin-bottom:32px;}
 .form-sub span{color:white;font-weight:600;}
-/* OTP boxes */
 .otp-row{display:flex;gap:12px;justify-content:center;margin-bottom:28px;}
 .otp-box{width:52px;height:60px;border-radius:14px;background:rgba(255,255,255,0.05);border:1.5px solid var(--border);font-size:24px;font-weight:700;color:white;text-align:center;font-family:'DM Mono',monospace;outline:none;transition:border .18s,transform .15s;}
 .otp-box:focus{border-color:rgba(227,24,55,.7);transform:scale(1.05);}
@@ -28,8 +26,6 @@ html,body{min-height:100vh;background:var(--bg);font-family:'DM Sans',sans-serif
 .resend-row{text-align:center;font-size:14px;color:var(--muted);}
 .resend-btn{background:none;border:none;color:var(--red);font-weight:700;cursor:pointer;font-size:14px;font-family:'DM Sans',sans-serif;}
 .resend-btn:disabled{color:var(--muted);cursor:not-allowed;}
-#countdown{color:var(--muted);}
-/* success overlay */
 .success-overlay{display:none;position:fixed;inset:0;background:var(--bg);z-index:100;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center;}
 .success-overlay.show{display:flex;}
 .success-circle{width:90px;height:90px;border-radius:50%;background:rgba(34,197,94,.15);border:2px solid rgba(34,197,94,.35);display:flex;align-items:center;justify-content:center;margin:0 auto 22px;font-size:42px;}
@@ -46,13 +42,11 @@ html,body{min-height:100vh;background:var(--bg);font-family:'DM Sans',sans-serif
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
     Back to login
   </a>
-
   <div class="icon-circle">
     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
   </div>
   <div class="form-title">Verify your email</div>
-  <div class="form-sub" id="otpSub">Enter the 6-digit code sent to <span id="emailDisplay">your email</span></div>
-
+  <div class="form-sub">Enter the 6-digit code sent to <span id="emailDisplay">your email</span></div>
   <div class="otp-row" id="otpRow">
     <input class="otp-box" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]"/>
     <input class="otp-box" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]"/>
@@ -61,7 +55,6 @@ html,body{min-height:100vh;background:var(--bg);font-family:'DM Sans',sans-serif
     <input class="otp-box" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]"/>
     <input class="otp-box" maxlength="1" type="text" inputmode="numeric" pattern="[0-9]"/>
   </div>
-
   <button class="btn" id="verifyBtn" onclick="doVerify()">Verify Code</button>
   <div class="resend-row">
     Didn't receive it?
@@ -70,108 +63,77 @@ html,body{min-height:100vh;background:var(--bg);font-family:'DM Sans',sans-serif
     </button>
   </div>
 </div>
-
-<!-- Success overlay -->
 <div class="success-overlay" id="successOverlay">
   <div class="success-circle">✓</div>
   <div class="success-title">Verified!</div>
   <div class="success-sub">Your account is confirmed.<br/>Taking you to your dashboard…</div>
 </div>
-
 <script>
-const SUPABASE_URL      = 'https://rgtbqipsdebekzznswll.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_QF5lXikZj0cRv1sipEFtyg_zqjw0eW1';
-const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const SUPABASE_URL='https://rgtbqipsdebekzznswll.supabase.co';
+const SUPABASE_ANON_KEY='sb_publishable_QF5lXikZj0cRv1sipEFtyg_zqjw0eW1';
+const _sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+const params=new URLSearchParams(location.search);
+const email=decodeURIComponent(params.get('email')||'');
+if(email) document.getElementById('emailDisplay').textContent=email;
 
-const params = new URLSearchParams(location.search);
-const mode   = params.get('mode') || 'verify';
-const email  = decodeURIComponent(params.get('email') || '');
-if(email) document.getElementById('emailDisplay').textContent = email;
-
-// ── OTP box auto-advance ──────────────────────────────────────────────────────
-const boxes = document.querySelectorAll('.otp-box');
-boxes.forEach((box, i) => {
-  box.addEventListener('input', e => {
-    const v = e.target.value.replace(/\D/g,'');
-    e.target.value = v;
-    e.target.classList.toggle('filled', v.length > 0);
-    if(v && i < boxes.length - 1) boxes[i+1].focus();
+const boxes=document.querySelectorAll('.otp-box');
+boxes.forEach((box,i)=>{
+  box.addEventListener('input',e=>{
+    const v=e.target.value.replace(/\D/g,'');
+    e.target.value=v; e.target.classList.toggle('filled',v.length>0);
+    if(v&&i<boxes.length-1) boxes[i+1].focus();
   });
-  box.addEventListener('keydown', e => {
-    if(e.key === 'Backspace' && !box.value && i > 0) boxes[i-1].focus();
-    if(e.key === 'Enter') doVerify();
+  box.addEventListener('keydown',e=>{
+    if(e.key==='Backspace'&&!box.value&&i>0) boxes[i-1].focus();
+    if(e.key==='Enter') doVerify();
   });
-  box.addEventListener('paste', e => {
+  box.addEventListener('paste',e=>{
     e.preventDefault();
-    const text = (e.clipboardData||window.clipboardData).getData('text').replace(/\D/g,'');
-    [...text].slice(0,6).forEach((ch,j) => {
-      if(boxes[j]){boxes[j].value=ch;boxes[j].classList.add('filled');}
-    });
-    boxes[Math.min(text.length, 5)].focus();
+    const text=(e.clipboardData||window.clipboardData).getData('text').replace(/\D/g,'');
+    [...text].slice(0,6).forEach((ch,j)=>{ if(boxes[j]){boxes[j].value=ch;boxes[j].classList.add('filled');} });
+    boxes[Math.min(text.length,5)].focus();
   });
 });
 
-// ── Countdown ─────────────────────────────────────────────────────────────────
-let secs = 60;
-const tick = setInterval(() => {
-  secs--;
-  document.getElementById('countdown').textContent = secs + 's';
-  if(secs <= 0){
-    clearInterval(tick);
-    const btn = document.getElementById('resendBtn');
-    btn.disabled = false;
-    btn.innerHTML = 'Resend code';
-  }
-}, 1000);
+let secs=60;
+const tick=setInterval(()=>{
+  secs--; document.getElementById('countdown').textContent=secs+'s';
+  if(secs<=0){ clearInterval(tick); const btn=document.getElementById('resendBtn'); btn.disabled=false; btn.innerHTML='Resend code'; }
+},1000);
 
 function getOtp(){ return [...boxes].map(b=>b.value).join(''); }
 
 function showToast(msg,ok=true){
   let t=document.getElementById('_toast');
-  if(!t){t=document.createElement('div');t.id='_toast';
-    t.style.cssText='position:fixed;top:22px;right:18px;z-index:9999;border-radius:14px;padding:13px 18px;font-size:14px;font-weight:600;max-width:300px;box-shadow:0 8px 28px rgba(0,0,0,.5);font-family:DM Sans,sans-serif;transition:opacity .3s;';
-    document.body.appendChild(t);}
+  if(!t){t=document.createElement('div');t.id='_toast';t.style.cssText='position:fixed;top:22px;right:18px;z-index:9999;border-radius:14px;padding:13px 18px;font-size:14px;font-weight:600;max-width:300px;box-shadow:0 8px 28px rgba(0,0,0,.5);font-family:DM Sans,sans-serif;transition:opacity .3s;';document.body.appendChild(t);}
   t.textContent=(ok?'✓  ':'✗  ')+msg;
   t.style.background=ok?'linear-gradient(135deg,#0f2d1a,#091c10)':'linear-gradient(135deg,#2d0f0f,#1c0808)';
   t.style.border=ok?'1px solid rgba(34,197,94,.35)':'1px solid rgba(227,24,55,.35)';
-  t.style.color=ok?'#4ade80':'#f87171';t.style.opacity='1';
-  clearTimeout(t._timer);t._timer=setTimeout(()=>{t.style.opacity='0';},3200);
+  t.style.color=ok?'#4ade80':'#f87171'; t.style.opacity='1';
+  clearTimeout(t._timer); t._timer=setTimeout(()=>{t.style.opacity='0';},3200);
 }
 
 async function doVerify(){
-  const otp = getOtp();
-  if(otp.length < 6){ showToast('Enter all 6 digits.',false); shake(); return; }
-  const btn = document.getElementById('verifyBtn');
-  btn.disabled = true; btn.textContent = 'Verifying…';
-
-  const {data, error} = await _sb.auth.verifyOtp({email, token: otp, type: 'signup'});
-  if(error){
-    showToast(error.message, false);
-    shake();
-    btn.disabled=false; btn.textContent='Verify Code';
-    return;
-  }
-  // Success
+  const otp=getOtp();
+  if(otp.length<6){showToast('Enter all 6 digits.',false);shake();return;}
+  const btn=document.getElementById('verifyBtn');
+  btn.disabled=true; btn.textContent='Verifying…';
+  const {data,error}=await _sb.auth.verifyOtp({email,token:otp,type:'signup'});
+  if(error){ showToast(error.message,false); shake(); btn.disabled=false; btn.textContent='Verify Code'; return; }
   document.getElementById('successOverlay').classList.add('show');
-  setTimeout(() => location.href = 'dashboard.html', 2000);
+  setTimeout(()=>location.replace('dashboard.html'),2000);
 }
 
 async function resendOtp(){
-  const {error} = await _sb.auth.resend({type:'signup', email});
+  const {error}=await _sb.auth.resend({type:'signup',email});
   if(error){showToast(error.message,false);}
-  else{
-    showToast('New code sent!');
-    secs=60; document.getElementById('resendBtn').disabled=true;
-    document.getElementById('resendBtn').innerHTML='Resend in <span id="countdown">60s</span>';
-  }
+  else{ showToast('New code sent!'); secs=60; document.getElementById('resendBtn').disabled=true; document.getElementById('resendBtn').innerHTML='Resend in <span id="countdown">60s</span>'; }
 }
 
 function shake(){
-  const row = document.getElementById('otpRow');
-  row.classList.add('shake');
-  setTimeout(()=>row.classList.remove('shake'),400);
-  boxes.forEach(b=>{b.value='';b.classList.remove('filled');});
-  boxes[0].focus();
+  const row=document.getElementById('otpRow');
+  row.classList.add('shake'); setTimeout(()=>row.classList.remove('shake'),400);
+  boxes.forEach(b=>{b.value='';b.classList.remove('filled');}); boxes[0].focus();
 }
 </script>
 </body>
