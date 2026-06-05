@@ -246,7 +246,7 @@ const CURRENCY_LABELS={USD:'USD (US Dollar)',GBP:'GBP (British Pound)',EUR:'EUR 
 
 (async()=>{
   const {data:{session}}=await _sb.auth.getSession();
-  if(!session){location.href='index.html';return;}
+  if(!session){location.replace('index.html');return;}
   _session=session;
   const {data:prof}=await _sb.from('profiles').select('*').eq('id',session.user.id).single();
   _profile=prof||{id:session.user.id};
@@ -386,7 +386,7 @@ async function deleteAccount(){
   if(val!=='DELETE'){showToast('Type DELETE to confirm.',false);return;}
   showToast('Signing you out…');
   await _sb.auth.signOut();
-  setTimeout(()=>{location.href='index.html';},1200);
+  setTimeout(()=>{location.replace('index.html');},1200);
 }
 </script>
 
