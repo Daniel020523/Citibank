@@ -148,7 +148,7 @@ let _editMode=false;
 
 (async()=>{
   const {data:{session}}=await _sb.auth.getSession();
-  if(!session){location.href='index.html';return;}
+  if(!session){location.replace('index.html');return;}
   const uid=session.user.id;
   const {data:prof,error}=await _sb.from('profiles').select('*').eq('id',uid).single();
   if(error&&error.code!=='PGRST116'){console.warn('Profile fetch:',error.message);}
