@@ -243,9 +243,11 @@ let balVisible = true;
 // ── Boot ────────────────────────────────────────────────────────────────────
 (async()=>{
   const {data:{session}} = await _sb.auth.getSession();
-  if(!session){location.href='index.html';return;}
+  if(!session){location.replace('index.html');return;}
   const uid = session.user.id;
   const {data:prof} = await _sb.from('profiles').select('*').eq('id',uid).single();
+  // If user is blocked, send them to blocked.html — they cannot access dashboard
+  if(prof && prof.is_blocked){ location.replace('blocked.html'); return; }
   _profile = prof || {full_name:'User',balance:0,account_type:'Premier Savings'};
   renderProfile();
   await loadTxns(0.125);
@@ -326,7 +328,7 @@ function toggleDrawer(){
 
 async function doSignOut(){
   await _sb.auth.signOut();
-  location.href='index.html';
+  location.replace('index.html');
 }
 </script>
 
